@@ -1,0 +1,13 @@
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Template, TemplateDocument, TemplateCategory } from './schemas/template.schema';
+import { CreateTemplateDto } from './dto/create-template.dto';
+
+// QR block helper: renders img when qrCodeUrl is set, bordered box otherwise
+const qrBlock = (color: string) =>
+  `<div style="position:relative;width:48px;height:48px;flex-shrink:0;">` +
+  `<div style="width:48px;height:48px;border:2px dashed ${color};border-radius:6px;opacity:0.5;position:absolute;inset:0;"></div>` +
+  `<img src="{{qrCodeUrl}}" alt="QR" style="width:48px;height:48px;border-radius:6px;position:absolute;inset:0;object-fit:cover;" onerror="this.style.display='none'" />` +
+  `</div>`;
+

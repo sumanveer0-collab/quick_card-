@@ -1,0 +1,589 @@
+# Text Editing Visual Guide
+
+## 🎨 INLINE TEXT EDITING SYSTEM
+
+---
+
+## 📋 EDITING WORKFLOW
+
+### Step 1: View Mode (Default)
+```
+┌──────────────────────────────────────────────────┐
+│                                                  │
+│                                                  │
+│         ┌─────────────────────┐                 │
+│         │  Your Business Name │  ← Click to select
+│         └─────────────────────┘                 │
+│                                                  │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+- Text is selectable
+- Text is draggable
+- Shows blue border when selected
+
+### Step 2: Selected State
+```
+         ┌────────────────────────────────────────┐
+         │ [Font▼] [-]16[+] [B][I] [≡][≡][≡] [🎨] │
+         └────────────────────────────────────────┘
+                          ▼
+┌──────────────────────────────────────────────────┐
+│                                                  │
+│                                                  │
+│         ┏━━━━━━━━━━━━━━━━━━━━━┓                 │
+│         ┃  Your Business Name ┃  ← Selected (blue border)
+│         ┗━━━━━━━━━━━━━━━━━━━━━┛                 │
+│                                                  │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+- Floating toolbar appears above
+- Blue selection border
+- Can drag or edit
+
+### Step 3: Edit Mode (Double-Click)
+```
+         ┌────────────────────────────────────────┐
+         │ [Font▼] [-]16[+] [B][I] [≡][≡][≡] [🎨] │
+         └────────────────────────────────────────┘
+                          ▼
+┌──────────────────────────────────────────────────┐
+│                                                  │
+│                                                  │
+│         ┏━━━━━━━━━━━━━━━━━━━━━┓                 │
+│         ┃  Your Business Name|┃  ← Cursor blinking
+│         ┗━━━━━━━━━━━━━━━━━━━━━┛                 │
+│                                                  │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+- Double-click to enter edit mode
+- Cursor appears in text
+- Can type directly
+- Original text faded
+- Toolbar still visible
+
+---
+
+## 🎛️ FLOATING TOOLBAR BREAKDOWN
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                                                                    │
+│  ┌─────────┐ │ ┌───┬────┬───┐ │ ┌───┬───┐ │ ┌───┬───┬───┐ │ ┌───┐ │
+│  │ Inter ▼ │ │ │ - │ 16 │ + │ │ │ B │ I │ │ │ ≡ │ ≡ │ ≡ │ │ │ 🎨│ │
+│  └─────────┘ │ └───┴────┴───┘ │ └───┴───┘ │ └───┴───┴───┘ │ └───┘ │
+│                                                                    │
+│   Font        Font Size         Styles      Alignment      Color  │
+│   Family                                                           │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+                                  ▼
+                          (Tooltip Arrow)
+```
+
+### Section 1: Font Family
+```
+┌─────────────┐
+│ Inter     ▼ │  ← Dropdown
+└─────────────┘
+     │
+     ├─ Inter
+     ├─ Poppins
+     ├─ Montserrat
+     ├─ Playfair Display
+     ├─ Roboto
+     ├─ Lato
+     ├─ Raleway
+     ├─ Oswald
+     ├─ Georgia
+     └─ Arial
+```
+
+### Section 2: Font Size
+```
+┌───┬────┬───┐
+│ - │ 16 │ + │
+└───┴────┴───┘
+  │   │    │
+  │   │    └─ Increase (+2)
+  │   └────── Current size
+  └────────── Decrease (-2)
+
+Range: 8px - 72px
+```
+
+### Section 3: Text Styles
+```
+┌───┬───┐
+│ B │ I │
+└───┴───┘
+  │   │
+  │   └─ Italic (toggle)
+  └───── Bold (toggle)
+
+Active: Blue background
+Inactive: Gray background
+```
+
+### Section 4: Alignment
+```
+┌───┬───┬───┐
+│ ≡ │ ≡ │ ≡ │
+└───┴───┴───┘
+  │   │   │
+  │   │   └─ Right align
+  │   └───── Center align
+  └───────── Left align
+
+Active: Blue background
+```
+
+### Section 5: Color Picker
+```
+┌───┐
+│ 🎨│  ← Click to open
+└───┘
+  │
+  ▼
+┌─────────────────────────┐
+│ ┌─┬─┬─┬─┬─┬─┐          │
+│ │█│█│█│█│█│█│  Presets │
+│ ├─┼─┼─┼─┼─┼─┤          │
+│ │█│█│█│█│█│█│          │
+│ ├─┼─┼─┼─┼─┼─┤          │
+│ │█│█│█│█│█│█│          │
+│ └─┴─┴─┴─┴─┴─┘          │
+│                         │
+│ ┌─────────────────────┐ │
+│ │ Custom Color Picker │ │
+│ └─────────────────────┘ │
+└─────────────────────────┘
+
+20 preset colors + custom
+```
+
+---
+
+## 🔄 SYNCHRONIZATION DIAGRAM
+
+### Three-Way Sync
+
+```
+┌─────────────────┐
+│  FLOATING       │
+│  TOOLBAR        │
+│  (Above Text)   │
+└────────┬────────┘
+         │
+         │ Updates
+         ▼
+┌─────────────────┐      ┌─────────────────┐
+│  CANVAS         │◄────►│  SIDEBAR        │
+│  (Center)       │      │  (Left Panel)   │
+│                 │      │                 │
+│  ┌───────────┐  │      │  ┌───────────┐  │
+│  │ Your Text │  │      │  │ Font: 16  │  │
+│  └───────────┘  │      │  │ Bold: ✓   │  │
+│                 │      │  │ Color: ■  │  │
+└─────────────────┘      │  └───────────┘  │
+                         └─────────────────┘
+
+All three stay in sync in real-time!
+```
+
+### Update Flow
+
+```
+User Action
+    │
+    ├─ Change in Toolbar
+    │       │
+    │       ▼
+    │  updateElement()
+    │       │
+    │       ▼
+    │  Zustand Store
+    │       │
+    │       ├──► Canvas Re-renders
+    │       └──► Sidebar Re-renders
+    │
+    ├─ Change in Sidebar
+    │       │
+    │       ▼
+    │  updateElement()
+    │       │
+    │       ▼
+    │  Zustand Store
+    │       │
+    │       ├──► Canvas Re-renders
+    │       └──► Toolbar Re-renders
+    │
+    └─ Type in Inline Editor
+            │
+            ▼
+       updateElement() (live)
+            │
+            ▼
+       Zustand Store
+            │
+            ├──► Canvas Re-renders
+            ├──► Sidebar Re-renders
+            └──► Toolbar Re-renders
+```
+
+---
+
+## 📱 SIDEBAR TEXT EDITOR
+
+```
+┌─────────────────────────────────┐
+│ ▼ TEXT EDITOR                   │
+├─────────────────────────────────┤
+│                                 │
+│ Text Content                    │
+│ ┌─────────────────────────────┐ │
+│ │ Your Business Name          │ │
+│ │                             │ │
+│ │                             │ │
+│ └─────────────────────────────┘ │
+│ 💡 Tip: Double-click text on   │
+│    canvas to edit inline        │
+│                                 │
+│ Font Family                     │
+│ ┌─────────────────────────────┐ │
+│ │ Inter                     ▼ │ │
+│ └─────────────────────────────┘ │
+│                                 │
+│ Font Size: 16px                 │
+│ ├─────────────────────────────┤ │
+│ 8                            72 │
+│                                 │
+│ Font Weight                     │
+│ ┌────┬────┬────┬────┬────┐     │
+│ │ N  │ B  │600 │700 │800 │     │
+│ └────┴────┴────┴────┴────┘     │
+│                                 │
+│ Alignment                       │
+│ ┌────┬────┬────┐                │
+│ │ ≡  │ ≡  │ ≡  │                │
+│ └────┴────┴────┘                │
+│                                 │
+│ Text Color                      │
+│ ┌─────────────────────────────┐ │
+│ │ ■ #000000                   │ │
+│ └─────────────────────────────┘ │
+│                                 │
+│ Letter Spacing: 0px             │
+│ ├─────────────────────────────┤ │
+│ -5                           20 │
+│                                 │
+│ Line Height: 1.2                │
+│ ├─────────────────────────────┤ │
+│ 0.8                         2.5 │
+│                                 │
+└─────────────────────────────────┘
+```
+
+---
+
+## 🎨 VISUAL STATES
+
+### Normal State
+```
+┌─────────────────────┐
+│  Your Business Name │  ← Normal appearance
+└─────────────────────┘
+```
+
+### Hover State
+```
+┌─────────────────────┐
+│  Your Business Name │  ← Subtle highlight
+└─────────────────────┘
+```
+
+### Selected State
+```
+┏━━━━━━━━━━━━━━━━━━━━━┓
+┃  Your Business Name ┃  ← Blue border (2px)
+┗━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+### Editing State
+```
+┏━━━━━━━━━━━━━━━━━━━━━┓
+┃  Your Business Name|┃  ← Faded (30% opacity)
+┗━━━━━━━━━━━━━━━━━━━━━┛
+         +
+┏━━━━━━━━━━━━━━━━━━━━━┓
+┃  Your Business Name|┃  ← Overlay textarea
+┗━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+### Outside Safe Area Warning
+```
+┏━━━━━━━━━━━━━━━━━━━━━┓
+┃  Your Business Name ┃  ← Orange border (2px)
+┗━━━━━━━━━━━━━━━━━━━━━┛
+⚠️ Element is outside safe area!
+```
+
+---
+
+## 🎬 ANIMATION SEQUENCE
+
+### Toolbar Appearance
+```
+Frame 1 (0ms):
+  opacity: 0
+  y: +10px
+  scale: 0.95
+
+Frame 2 (75ms):
+  opacity: 0.5
+  y: +5px
+  scale: 0.975
+
+Frame 3 (150ms):
+  opacity: 1
+  y: 0px
+  scale: 1.0
+  ✓ Complete
+```
+
+### Color Picker Dropdown
+```
+Frame 1 (0ms):
+  opacity: 0
+  scale: 0.95
+
+Frame 2 (75ms):
+  opacity: 0.5
+  scale: 0.975
+
+Frame 3 (150ms):
+  opacity: 1
+  scale: 1.0
+  ✓ Complete
+```
+
+### Text Fade During Edit
+```
+Normal → Edit:
+  opacity: 1.0 → 0.3
+  transition: 200ms
+
+Edit → Normal:
+  opacity: 0.3 → 1.0
+  transition: 200ms
+```
+
+---
+
+## 🖱️ INTERACTION PATTERNS
+
+### Single Click
+```
+Click Text
+    │
+    ▼
+Select Element
+    │
+    ├─ Show blue border
+    ├─ Show floating toolbar
+    └─ Update sidebar
+```
+
+### Double Click
+```
+Double-Click Text
+    │
+    ▼
+Enter Edit Mode
+    │
+    ├─ Fade original text (30%)
+    ├─ Show textarea overlay
+    ├─ Focus and select text
+    └─ Keep toolbar visible
+```
+
+### Escape Key
+```
+Press Escape (while editing)
+    │
+    ▼
+Save and Exit
+    │
+    ├─ Update element text
+    ├─ Remove textarea overlay
+    ├─ Restore text opacity
+    └─ Keep element selected
+```
+
+### Click Outside
+```
+Click Outside (while editing)
+    │
+    ▼
+Save and Exit
+    │
+    ├─ Update element text
+    ├─ Remove textarea overlay
+    ├─ Restore text opacity
+    └─ Deselect element
+```
+
+---
+
+## 🎯 POSITIONING EXAMPLES
+
+### Toolbar Above Text (Top)
+```
+         ┌──────────────┐
+         │   TOOLBAR    │
+         └──────────────┘
+                ▼
+         ┌──────────────┐
+         │  Your Text   │
+         └──────────────┘
+```
+
+### Toolbar Above Text (Left)
+```
+┌──────────────┐
+│   TOOLBAR    │
+└──────────────┘
+       ▼
+┌──────────────┐
+│  Your Text   │
+└──────────────┘
+```
+
+### Toolbar Above Text (Right)
+```
+         ┌──────────────┐
+         │   TOOLBAR    │
+         └──────────────┘
+                ▼
+         ┌──────────────┐
+         │  Your Text   │
+         └──────────────┘
+```
+
+Position adjusts based on text location!
+
+---
+
+## 🎨 COLOR PICKER LAYOUT
+
+```
+┌─────────────────────────────┐
+│  Color Presets              │
+│                             │
+│  ┌──┬──┬──┬──┬──┬──┐       │
+│  │██│██│██│██│██│██│ Row 1 │
+│  ├──┼──┼──┼──┼──┼──┤       │
+│  │██│██│██│██│██│██│ Row 2 │
+│  ├──┼──┼──┼──┼──┼──┤       │
+│  │██│██│██│██│██│██│ Row 3 │
+│  ├──┼──┼──┼──┼──┼──┤       │
+│  │██│██│██│██│██│██│ Row 4 │
+│  └──┴──┴──┴──┴──┴──┘       │
+│                             │
+│  Custom Color               │
+│  ┌─────────────────────────┐│
+│  │ [Color Input]           ││
+│  └─────────────────────────┘│
+│                             │
+└─────────────────────────────┘
+```
+
+### Color Grid (6×4 = 24 colors)
+- Row 1: Blacks, Grays, White
+- Row 2: Reds, Oranges, Yellows
+- Row 3: Greens, Teals
+- Row 4: Blues, Purples, Pinks
+
+---
+
+## 📐 RESPONSIVE SCALING
+
+### At 50% Zoom
+```
+Small toolbar
+Small text
+Small controls
+```
+
+### At 100% Zoom (Default)
+```
+Normal toolbar
+Normal text
+Normal controls
+```
+
+### At 200% Zoom
+```
+Large toolbar
+Large text
+Large controls
+```
+
+Everything scales proportionally!
+
+---
+
+## ✨ VISUAL FEEDBACK
+
+### Button States
+
+#### Normal
+```
+┌─────┐
+│  B  │  Gray background
+└─────┘
+```
+
+#### Hover
+```
+┌─────┐
+│  B  │  Light gray background
+└─────┘
+```
+
+#### Active
+```
+┌─────┐
+│  B  │  Blue background
+└─────┘
+```
+
+#### Pressed
+```
+┌─────┐
+│  B  │  Dark blue background
+└─────┘
+```
+
+---
+
+## 🎓 QUICK TIPS
+
+### ✅ DO:
+- ✅ Double-click to edit text inline
+- ✅ Use floating toolbar for quick changes
+- ✅ Use sidebar for detailed control
+- ✅ Press Escape to save quickly
+- ✅ Click outside to save and deselect
+
+### ❌ DON'T:
+- ❌ Try to drag while editing
+- ❌ Expect browser prompts
+- ❌ Forget to save (auto-saves!)
+- ❌ Worry about sync (automatic!)
+
+---
+
+**Remember**: Everything syncs in real-time! Edit anywhere, see changes everywhere! 🎨✨
