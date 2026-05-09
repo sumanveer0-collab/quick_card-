@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Download, Share2, Edit, Printer, Loader2, CheckCircle, Clock, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
+import InteractiveCardCanvas from '@/components/card/InteractiveCardCanvas'
 import api from '@/lib/api'
 
 interface Card {
@@ -30,7 +31,6 @@ interface Card {
 
 export default function CardDetailPage() {
   const { id } = useParams()
-  const router = useRouter()
   const [card, setCard] = useState<Card | null>(null)
   const [loading, setLoading] = useState(true)
   const [printLoading, setPrintLoading] = useState(false)
@@ -134,34 +134,15 @@ export default function CardDetailPage() {
           {/* Card Preview */}
           <div className="space-y-4">
             <div className="bg-white rounded-3xl p-6 border border-gray-100 card-shadow">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">Card Preview</h3>
-              <div
-                className="rounded-2xl overflow-hidden relative"
-                style={{ background: layout.background || '#1d4ed8', aspectRatio: '1.75', padding: '24px' }}
-              >
-                {card.imageUrl ? (
-                  <Image src={card.imageUrl} alt={card.businessName} fill className="object-cover" />
-                ) : (
-                  <div className="flex flex-col justify-center h-full">
-                    <p className="font-bold text-xl" style={{ color: layout.primaryColor || '#fff', fontFamily: layout.fontFamily || 'Inter' }}>{card.businessName}</p>
-                    {card.tagline && <p className="text-sm mt-1 opacity-80" style={{ color: layout.primaryColor || '#fff' }}>{card.tagline}</p>}
-                    <p className="text-base mt-3 font-medium" style={{ color: layout.primaryColor || '#fff' }}>{card.name}</p>
-                    <div className="mt-2 space-y-1">
-                      <p className="text-sm opacity-70" style={{ color: layout.primaryColor || '#fff' }}>📞 {card.phone}</p>
-                      <p className="text-sm opacity-70" style={{ color: layout.primaryColor || '#fff' }}>✉ {card.email}</p>
-                      {card.website && <p className="text-sm opacity-70" style={{ color: layout.primaryColor || '#fff' }}>🌐 {card.website}</p>}
-                    </div>
-                  </div>
-                )}
-                {card.hasWatermark && (
-                  <div className="absolute bottom-2 right-2 bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full">Made with QuickCard</div>
-                )}
-                {card.qrCodeUrl && (
-                  <div className="absolute top-3 right-3 w-12 h-12 bg-white rounded-lg overflow-hidden">
-                    <Image src={card.qrCodeUrl} alt="QR" width={48} height={48} />
-                  </div>
-                )}
-              </div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">Interactive Card Editor</h3>
+              <InteractiveCardCanvas 
+                card={card} 
+                layout={layout}
+                onSave={(elements) => {
+                  // Handle saving the updated card elements
+                  console.log('Saving card elements:', elements)
+                }}
+              />
             </div>
 
             {/* Job Status */}
@@ -233,9 +214,9 @@ export default function CardDetailPage() {
                   ['Name', card.name],
                   ['Phone', card.phone],
                   ['Email', card.email],
-                  card.address && ['Address', card.address],
-                  card.website && ['Website', card.website],
-                ].filter(Boolean).map(([label, value]) => (
+                  ...(card.address ? [['Address', card.address]] : []),
+                  ...(card.website ? [['Website', card.website]] : []),
+                ].map(([label, value]) => (
                   <div key={label as string} className="flex gap-2">
                     <span className="text-gray-400 w-16 flex-shrink-0">{label}</span>
                     <span className="text-gray-700 font-medium">{value as string}</span>
