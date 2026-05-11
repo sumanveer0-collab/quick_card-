@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   Plus, Minus, Copy, Trash2, ChevronUp, ChevronDown, RotateCw,
-  Palette, Type
+  Palette, Type, Move, ArrowUp, ArrowDown, ArrowLeft, ArrowRight
 } from 'lucide-react'
 import { TextControlsProps } from '@/types/fabric.types'
 import FontSelector from './FontSelector'
@@ -92,6 +92,32 @@ export default function TextToolbar({
 
   const handleRotation = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdate({ angle: parseFloat(e.target.value) || 0 })
+  }
+
+  // Move controls
+  const moveText = (direction: 'up' | 'down' | 'left' | 'right', distance: number = 5) => {
+    const currentLeft = selectedText.left || 0
+    const currentTop = selectedText.top || 0
+    
+    let newLeft = currentLeft
+    let newTop = currentTop
+    
+    switch (direction) {
+      case 'up':
+        newTop = Math.max(0, currentTop - distance)
+        break
+      case 'down':
+        newTop = currentTop + distance
+        break
+      case 'left':
+        newLeft = Math.max(0, currentLeft - distance)
+        break
+      case 'right':
+        newLeft = currentLeft + distance
+        break
+    }
+    
+    onUpdate({ left: newLeft, top: newTop })
   }
 
   return (
@@ -301,6 +327,50 @@ export default function TextToolbar({
                 className="w-16 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 title={`Rotation: ${angle}°`}
               />
+            </div>
+          </div>
+
+          <div className="w-px h-6 bg-gray-300" />
+
+          {/* Move Controls */}
+          <div className="flex items-center gap-1">
+            <Move className="w-3 h-3 text-gray-500" />
+            <div className="grid grid-cols-3 gap-1">
+              <div></div>
+              <button
+                onClick={() => moveText('up')}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Move up"
+              >
+                <ArrowUp className="w-3 h-3" />
+              </button>
+              <div></div>
+              
+              <button
+                onClick={() => moveText('left')}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Move left"
+              >
+                <ArrowLeft className="w-3 h-3" />
+              </button>
+              <div></div>
+              <button
+                onClick={() => moveText('right')}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Move right"
+              >
+                <ArrowRight className="w-3 h-3" />
+              </button>
+              
+              <div></div>
+              <button
+                onClick={() => moveText('down')}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title="Move down"
+              >
+                <ArrowDown className="w-3 h-3" />
+              </button>
+              <div></div>
             </div>
           </div>
 
