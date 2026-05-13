@@ -6,7 +6,7 @@ import {
   Plus, Minus, Type, Palette, RotateCw, Copy, Trash2, X,
   ChevronDown, List, ListOrdered, Strikethrough
 } from 'lucide-react'
-import { useEditorStore } from '@/store/editor.store'
+import { useEditorStore, BLEED_PX } from '@/store/editor.store'
 
 interface CanvasTextEditorProps {
   elementId: string
@@ -27,6 +27,7 @@ export default function CanvasTextEditor({
   const [showFontSelector, setShowFontSelector] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const toolbarRef = useRef<HTMLDivElement>(null)
+  const editorContainerRef = useRef<HTMLDivElement>(null)
 
   const element = elements.find(el => el.id === elementId && el.type === 'text')
   
@@ -56,19 +57,20 @@ export default function CanvasTextEditor({
   const canvasPos = getCanvasPosition()
 
   // Calculate position for toolbar and editor relative to canvas
+  // Account for bleed area offset
   const toolbarStyle = {
-    left: canvasPos.left + (x * displayScale) + (width * displayScale / 2),
-    top: canvasPos.top + (y * displayScale) - 60,
+    left: canvasPos.left + ((x + BLEED_PX) * displayScale) + (width * displayScale / 2),
+    top: canvasPos.top + ((y + BLEED_PX) * displayScale) - 60,
     transform: 'translateX(-50%)',
     zIndex: 1000
   }
 
   const editorStyle = {
-    left: canvasPos.left + (x * displayScale),
-    top: canvasPos.top + (y * displayScale),
+    left: canvasPos.left + ((x + BLEED_PX) * displayScale),
+    top: canvasPos.top + ((y + BLEED_PX) * displayScale),
     width: width * displayScale,
     minHeight: height * displayScale,
-    fontSize: Math.max(12, fontSize * displayScale * 0.8),
+    fontSize: Math.max(12, fontSize * displayScale),
     fontFamily,
     fontWeight,
     color: fill,
@@ -114,16 +116,25 @@ export default function CanvasTextEditor({
     }
   }
 
-  // Auto-resize textarea
+  // Auto-resize textarea and update element dimensions
   const autoResize = () => {
     const textarea = textareaRef.current
     if (textarea) {
+      // Reset height to auto to get accurate scrollHeight
       textarea.style.height = 'auto'
-      textarea.style.height = textarea.scrollHeight + 'px'
+      const newScrollHeight = textarea.scrollHeight
+      textarea.style.height = newScrollHeight + 'px'
       
-      // Update element dimensions
-      const newHeight = Math.max(textarea.scrollHeight / displayScale, 30)
-      handleStyleChange({ height: newHeight })
+      // Update element dimensions in real-time
+      const newHeight = Math.max(newScrollHeight / displayScale, 30)
+      const newWidth = Math.max(textarea.scrollWidth / displayScale, 100)
+      
+      // Update both height and width if text overflows
+      handleStyleChange({ 
+        height: newHeight,
+        // Only update width if text is overflowing
+        ...(textarea.scrollWidth > textarea.clientWidth ? { width: newWidth } : {})
+      })
     }
   }
 
@@ -132,6 +143,16 @@ export default function CanvasTextEditor({
       autoResize()
     }
   }, [text, isEditing])
+
+  // Auto-focus and select text when component mounts
+  useEffect(() => {
+    if (textareaRef.current) {
+      setTimeout(() => {
+        textareaRef.current?.focus()
+        textareaRef.current?.select()
+      }, 100)
+    }
+  }, [])
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -435,7 +456,10 @@ export default function CanvasTextEditor({
 
       {/* Text Editor - Positioned on canvas */}
       <div
-        className="fixed bg-transparent overflow-hidden cursor-text"
+        ref={editorContainerRef}
+        className={`fixed overflow-visible cursor-text transition-all duration-200 ${
+          isEditing ? 'ring-2 ring-blue-500 ring-offset-2 rounded-lg' : 'hover:ring-2 hover:ring-blue-300 hover:ring-offset-1 rounded-lg'
+        }`}
         style={editorStyle}
         onClick={toggleEditing}
       >
@@ -443,33 +467,50 @@ export default function CanvasTextEditor({
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(e) => handleTextChange(e.target.value)}
-            onBlur={() => setIsEditing(false)}
-            className="w-full h-full resize-none border-none outline-none bg-white/95 backdrop-blur-sm p-2 leading-relaxed rounded-lg"
+            onChange={(e) => {
+              handleTextChange(e.target.value)
+              autoResize()
+            }}
+            onBlur={() => {
+              setIsEditing(false)
+              // Don't close the editor, just stop editing mode
+            }}
+            onInput={autoResize}
+            className="w-full h-full resize-none border-none outline-none bg-white/95 backdrop-blur-sm p-3 leading-relaxed rounded-lg shadow-lg"
             style={{
-              fontSize: Math.max(12, fontSize * displayScale * 0.8),
+              fontSize: Math.max(12, fontSize * displayScale),
               fontFamily,
               fontWeight,
               color: fill,
-              textAlign: align as 'left' | 'center' | 'right'
+              textAlign: align as 'left' | 'center' | 'right',
+              minHeight: '40px',
+              overflow: 'hidden'
             }}
             autoFocus
-            placeholder="Enter your text..."
+            placeholder="Click to edit text..."
           />
         ) : (
           <div
-            className="w-full h-full p-2 leading-relaxed"
+            className="w-full h-full p-3 leading-relaxed bg-transparent hover:bg-white/10 transition-colors rounded-lg"
             style={{
-              fontSize: Math.max(12, fontSize * displayScale * 0.8),
+              fontSize: Math.max(12, fontSize * displayScale),
               fontFamily,
               fontWeight,
               color: fill,
               textAlign: align as 'left' | 'center' | 'right',
               whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word'
+              wordBreak: 'break-word',
+              minHeight: '40px'
             }}
           >
             {text || 'Click to edit text'}
+          </div>
+        )}
+        
+        {/* Visual indicator for editable text */}
+        {!isEditing && (
+          <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Click to edit
           </div>
         )}
       </div>

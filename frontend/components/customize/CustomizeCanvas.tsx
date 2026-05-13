@@ -1,6 +1,7 @@
 'use client'
 import { useRef, useEffect, useState } from 'react'
-import { Stage, Layer, Rect, Circle, Image as KonvaImage, Line, Group } from 'react-konva'
+import { Stage, Layer, Rect, Circle, Image as KonvaImage, Line, Group, Transformer } from 'react-konva'
+import Konva from 'konva'
 import { useEditorStore, CANVAS_WIDTH_PX, CANVAS_HEIGHT_PX, BLEED_PX, SAFE_AREA_X, SAFE_AREA_Y, SAFE_AREA_WIDTH, SAFE_AREA_HEIGHT, CARD_WIDTH_PX, CARD_HEIGHT_PX } from '@/store/editor.store'
 import useImage from 'use-image'
 import toast from 'react-hot-toast'
@@ -8,7 +9,7 @@ import InlineTextEditor from '../editor/InlineTextEditor'
 import VistaprintTextEditor from './VistaprintTextEditor'
 import AdvancedTextEditor from './AdvancedTextEditor'
 import QuickTextEditButton from './QuickTextEditButton'
-import GraphicElementToolbar from '../graphics/GraphicElementToolbar'
+import { FloatingToolbar } from '../graphics/modern'
 import EditableGraphicElement from './EditableGraphicElement'
 import SVGGraphicElement from './SVGGraphicElement'
 import IconElement from './IconElement'
@@ -17,39 +18,9 @@ import CanvaStyleTextElement from './CanvaStyleTextElement'
 import CanvaStyleToolbar from './CanvaStyleToolbar'
 import CanvaQuickActions from './CanvaQuickActions'
 import CanvasTextEditor from './CanvasTextEditor'
-
-interface ImageElementProps {
-  element: any
-  isSelected: boolean
-  onSelect: () => void
-  onChange: (attrs: any) => void
-}
-
-function ImageElement({ element, isSelected, onSelect, onChange }: ImageElementProps) {
-  const [image] = useImage(element.src || '')
-
-  return (
-    <KonvaImage
-      image={image}
-      x={element.x}
-      y={element.y}
-      width={element.width}
-      height={element.height}
-      rotation={element.rotation}
-      draggable
-      onClick={onSelect}
-      onTap={onSelect}
-      onDragEnd={(e) => {
-        onChange({
-          x: e.target.x(),
-          y: e.target.y(),
-        })
-      }}
-      stroke={isSelected ? 'transparent' : undefined}
-      strokeWidth={isSelected ? 0 : 0}
-    />
-  )
-}
+import ImageEditorToolbar from './ImageEditorToolbar'
+import FilteredImage from './FilteredImage'
+import VistaprintFloatingToolbar from './VistaprintFloatingToolbar'
 
 export default function CustomizeCanvas() {
   const {
@@ -77,11 +48,14 @@ export default function CustomizeCanvas() {
   const [selectedGraphicId, setSelectedGraphicId] = useState<string | null>(null)
   const [showZoomHint, setShowZoomHint] = useState(false)
   const [canvasTextEditorId, setCanvasTextEditorId] = useState<string | null>(null)
+  const [vistaprintToolbarId, setVistaprintToolbarId] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false })
+  const [showImageEditor, setShowImageEditor] = useState(false)
   const useCanvaStyle = true // Always use Canva style (floating toolbar)
   const useVistaprintEditor = false // Use Vistaprint-style editor
   const useAdvancedEditor = false // Use Advanced text editor - disabled in favor of CanvasTextEditor
-  const useCanvasTextEditor = true // Use new Canvas Text Editor
+  const useCanvasTextEditor = false // Use new Canvas Text Editor - disabled in favor of Vistaprint
+  const useVistaprintFloatingToolbar = true // Use Vistaprint Floating Toolbar (NEW)
 
   useEffect(() => {
     // Calculate scale based on available viewport space
@@ -177,18 +151,30 @@ export default function CustomizeCanvas() {
     setVistaprintEditingId(null)
     setAdvancedEditingId(null)
     setCanvasTextEditorId(null)
+    setVistaprintToolbarId(null)
     
     // Check if it's a graphic element
     const element = elements.find(el => el.id === id)
     if (element && (element.type === 'shape' || element.type === 'icon' || element.type === 'image')) {
       setSelectedGraphicId(id)
+      // Show image editor for images, icons, and shapes
+      if (element.type === 'image' || element.type === 'icon') {
+        setShowImageEditor(true)
+      } else {
+        setShowImageEditor(false)
+      }
     } else {
       setSelectedGraphicId(null)
+      setShowImageEditor(false)
     }
 
-    // If it's a text element and we're using canvas text editor, set it up
-    if (element && element.type === 'text' && useCanvasTextEditor) {
-      setCanvasTextEditorId(id)
+    // If it's a text element, show Vistaprint floating toolbar
+    if (element && element.type === 'text') {
+      if (useVistaprintFloatingToolbar) {
+        setVistaprintToolbarId(id)
+      } else if (useCanvasTextEditor) {
+        setCanvasTextEditorId(id)
+      }
     }
   }
 
@@ -200,14 +186,20 @@ export default function CustomizeCanvas() {
       setVistaprintEditingId(null)
       setAdvancedEditingId(null)
       setCanvasTextEditorId(null)
+      setVistaprintToolbarId(null)
       setSelectedGraphicId(null)
+      setShowImageEditor(false)
     }
     // Hide context menu on any click
     setContextMenu({ x: 0, y: 0, show: false })
   }
 
   const handleTextDoubleClick = (id: string) => {
-    if (useCanvasTextEditor) {
+    if (useVistaprintFloatingToolbar) {
+      // Vistaprint style: single click shows toolbar, double click enables inline editing
+      setVistaprintToolbarId(id)
+      selectElement(id)
+    } else if (useCanvasTextEditor) {
       setCanvasTextEditorId(id)
       selectElement(id)
     } else if (useAdvancedEditor) {
@@ -227,6 +219,7 @@ export default function CustomizeCanvas() {
     setVistaprintEditingId(null)
     setAdvancedEditingId(null)
     setCanvasTextEditorId(null)
+    setVistaprintToolbarId(null)
   }
 
   // Handle right-click context menu
@@ -535,7 +528,7 @@ export default function CustomizeCanvas() {
 
                   if (element.type === 'image') {
                     return (
-                      <ImageElement
+                      <FilteredImage
                         key={element.id}
                         element={element}
                         isSelected={isSelected}
@@ -602,9 +595,19 @@ export default function CustomizeCanvas() {
           </Stage>
 
           {/* Canvas Text Editor Overlay */}
-          {canvasTextEditorId && useCanvasTextEditor && (
+          {canvasTextEditorId && useCanvasTextEditor && !useVistaprintFloatingToolbar && (
             <CanvasTextEditor
               elementId={canvasTextEditorId}
+              onClose={handleCloseTextEditor}
+              displayScale={displayScale}
+              canvasRef={containerRef}
+            />
+          )}
+
+          {/* Vistaprint Floating Toolbar */}
+          {vistaprintToolbarId && useVistaprintFloatingToolbar && (
+            <VistaprintFloatingToolbar
+              elementId={vistaprintToolbarId}
               onClose={handleCloseTextEditor}
               displayScale={displayScale}
               canvasRef={containerRef}
@@ -640,18 +643,26 @@ export default function CustomizeCanvas() {
         </div>
 
         {/* Canva-style Toolbar (above selected element) */}
-        {selectedId && useCanvaStyle && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && (
+        {selectedId && useCanvaStyle && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !vistaprintToolbarId && (
           <CanvaStyleToolbar />
         )}
 
         {/* Canva-style Quick Actions (below selected element) */}
-        {selectedId && useCanvaStyle && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && (
+        {selectedId && useCanvaStyle && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !vistaprintToolbarId && (
           <CanvaQuickActions />
         )}
 
-        {/* Graphic Element Toolbar */}
-        {selectedGraphicId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && (
-          <GraphicElementToolbar
+        {/* Image Editor Toolbar */}
+        {showImageEditor && selectedId && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !vistaprintToolbarId && (
+          <ImageEditorToolbar
+            element={elements.find(el => el.id === selectedId)}
+            onClose={() => setShowImageEditor(false)}
+          />
+        )}
+
+        {/* Floating Toolbar for Graphics */}
+        {selectedGraphicId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !showImageEditor && !vistaprintToolbarId && (
+          <FloatingToolbar
             selectedElement={elements.find(el => el.id === selectedGraphicId) as any}
             onUpdate={handleUpdateGraphicElement}
             onDuplicate={handleDuplicateGraphic}

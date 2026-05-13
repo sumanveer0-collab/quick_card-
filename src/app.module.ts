@@ -12,6 +12,7 @@ import { ShareModule } from './modules/share/share.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { PrintModule } from './modules/print/print.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { BusinessCardModule } from './modules/business-card/business-card.module';
 import { CloudinaryModule } from './common/cloudinary/cloudinary.module';
 import { HealthModule } from './modules/health/health.module';
 
@@ -55,6 +56,7 @@ import { HealthModule } from './modules/health/health.module';
     DesignModule,
     AiModule,
     CardModule,
+    BusinessCardModule,
     ShareModule,
     SubscriptionModule,
     PrintModule,

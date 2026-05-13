@@ -581,6 +581,10 @@ export default function TemplatesPage() {
                       toast.success(`"${t.name}" selected!`, { icon: '✓', duration: 1500 })
                     }}
                     onPreview={t => setPreviewTemplate(t)}
+                    onCustomize={t => {
+                      // Navigate to editor with template ID
+                      router.push(`/customize?templateId=${t._id}`)
+                    }}
                     formData={formData}
                   />
                 </motion.div>

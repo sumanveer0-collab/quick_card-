@@ -1,4 +1,4 @@
-// File: C:\Users\TPW USER\Documents\GitHub\quick_card-\frontend\app\customize\page.tsx
+// File: J:\QuickCard\frontend\app\customize\page.tsx
 import * as entry from '../../../../app/customize/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

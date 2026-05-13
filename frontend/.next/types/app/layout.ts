@@ -1,4 +1,4 @@
-// File: C:\Users\TPW USER\Documents\GitHub\quick_card-\frontend\app\layout.tsx
+// File: J:\QuickCard\frontend\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

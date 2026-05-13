@@ -41,8 +41,8 @@ export default function CanvaStyleToolbar() {
   if (!element) return null
 
   const isTextElement = element.type === 'text'
-  const isBold = element.fontWeight === 'bold' || element.fontWeight === '700'
-  const isItalic = element.fontWeight?.includes('italic')
+  const isBold = element.fontWeight === 'bold' || element.fontWeight === '700' || element.fontWeight === 700
+  const isItalic = element.fontStyle === 'italic'
 
   const handleFontChange = (fontFamily: string) => {
     updateElement(selectedId!, { fontFamily })
@@ -60,10 +60,8 @@ export default function CanvaStyleToolbar() {
   }
 
   const handleToggleItalic = () => {
-    const baseWeight = element.fontWeight?.replace('italic', '').trim() || 'normal'
-    updateElement(selectedId!, { 
-      fontWeight: isItalic ? baseWeight : `${baseWeight} italic` 
-    })
+    const newStyle = isItalic ? 'normal' : 'italic'
+    updateElement(selectedId!, { fontStyle: newStyle })
   }
 
   const handleAlignChange = (align: 'left' | 'center' | 'right') => {

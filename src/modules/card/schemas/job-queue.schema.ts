@@ -15,7 +15,7 @@ export class JobQueue {
   @Prop({ required: true })
   cardId: string;
 
-  @Prop({ required: true, default: false })
+  @Prop({ default: false })
   printReady: boolean;
 
   @Prop({ default: null })

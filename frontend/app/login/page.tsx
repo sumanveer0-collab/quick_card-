@@ -286,40 +286,6 @@ export default function LoginPage() {
           </AnimatePresence>
         </div>
 
-        {/* Quick Access to Editor */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="mt-6"
-        >
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="px-3 bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-500">
-                or skip login
-              </span>
-            </div>
-          </div>
-          
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => router.push('/customize')}
-            className="w-full mt-4 flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-6 py-4 rounded-2xl border-2 border-gray-200 hover:border-blue-300 transition-all shadow-sm"
-          >
-            <CreditCard className="w-5 h-5 text-blue-600" />
-            <span>Start Designing Business Card</span>
-            <ArrowRight className="w-4 h-4 text-gray-400" />
-          </motion.button>
-          
-          <p className="text-center text-xs text-gray-400 mt-3">
-            No login required • Try the editor instantly
-          </p>
-        </motion.div>
-
         {/* Backend status hint */}
         <p className="text-center text-xs text-gray-400 mt-6">
           Frontend: <span className="font-mono">localhost:3000</span> · API: <span className="font-mono">localhost:3001</span>

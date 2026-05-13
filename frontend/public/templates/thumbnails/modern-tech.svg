@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  
+  
+  <!-- Background -->
+  <rect width="800" height="500" fill="#f5f5f5"/>
+  
+  <!-- Card with shadow -->
+  <defs>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="16"/>
+      <feOffset dx="0" dy="12" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.12"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Business Card -->
+  <rect x="100" y="78.5" width="600" height="343" rx="16" fill="#0f172a" filter="url(#shadow)"/>
+  
+  <!-- Decorative elements -->
+  
+        <rect x="450" y="80" width="80" height="80" fill="#06b6d4" opacity="0.1" rx="8"/>
+        <line x1="80" y1="280" x2="200" y2="280" stroke="#06b6d4" stroke-width="2" opacity="0.5"/>
+        <line x1="80" y1="300" x2="180" y2="300" stroke="#06b6d4" stroke-width="2" opacity="0.3"/>
+      
+  
+  <!-- Company Name -->
+  <text x="300" y="200" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#ffffff" text-anchor="middle">
+    MODERN
+  </text>
+  <text x="300" y="235" font-family="Arial, sans-serif" font-size="24" font-weight="normal" fill="#ffffff" text-anchor="middle" opacity="0.8">
+    Tech
+  </text>
+  
+  <!-- Contact Info -->
+  <text x="80" y="300" font-family="Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.7">
+    Your Name
+  </text>
+  <text x="80" y="320" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" opacity="0.6">
+    +91 98765 43210
+  </text>
+  <text x="80" y="335" font-family="Arial, sans-serif" font-size="10" fill="#ffffff" opacity="0.6">
+    you@example.com
+  </text>
+  
+  <!-- Shine effect -->
+  <rect x="100" y="78.5" width="600" height="343" rx="16" fill="url(#shine)" opacity="0.1"/>
+  <defs>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+</svg>

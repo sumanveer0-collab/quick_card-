@@ -1,22 +1,22 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Type, Image, Shapes, Palette, Layout, Droplet, MoreHorizontal,
-  ArrowLeft, ZoomIn, ZoomOut, Undo, Redo, Save, Download, FolderOpen, Maximize, Minimize, Settings, Package, RotateCcw, Edit3
+  ZoomIn, ZoomOut, Undo, Redo, Save, Download, FolderOpen, Package, Eye, ArrowRight
 } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import CustomizeSidebar from '@/components/customize/CustomizeSidebar'
 import CustomizeCanvas from '@/components/customize/CustomizeCanvas'
-import ProductOptionsModal from '@/components/customize/ProductOptionsModal'
-import ChangeOrientationModal from '@/components/customize/ChangeOrientationModal'
-import EnhancedTextEditor from '@/components/customize/EnhancedTextEditor'
+import PreviewModal from '@/components/customize/PreviewModal'
 import { useEditorStore } from '@/store/editor.store'
 import { useProductStore } from '@/store/product.store'
 import { useDesigns } from '@/hooks/useDesigns'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useLoadDesign } from '@/hooks/useLoadDesign'
+import { templates } from '@/lib/templates'
+import api from '@/lib/api'
 import toast from 'react-hot-toast'
 
 type TabType = 'text' | 'uploads' | 'graphics' | 'background' | 'templates' | 'color' | 'product' | 'more'
@@ -25,23 +25,15 @@ export default function CustomizePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const designId = searchParams.get('designId')
+  const templateId = searchParams.get('templateId')
   
-  const { zoom, setZoom, undo, redo, history, selectedId, elements, background } = useEditorStore()
-  const { 
-    isOptionsModalOpen, 
-    openOptionsModal, 
-    closeOptionsModal, 
-    selections, 
-    setSelections,
-    calculateTotalPrice 
-  } = useProductStore()
+  const { zoom, setZoom, undo, redo, history, selectedId, elements, background, addElement, setBackground } = useEditorStore()
+  const { calculateTotalPrice, selections } = useProductStore()
   const [activeTab, setActiveTab] = useState<TabType>('text')
   const [designName, setDesignName] = useState('Untitled Design')
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isFullCanvas, setIsFullCanvas] = useState(false)
-  const [showOrientationModal, setShowOrientationModal] = useState(false)
-  const [showEnhancedTextEditor, setShowEnhancedTextEditor] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
 
   const { createDesign, updateDesign } = useDesigns()
   const { loadDesign, loading: loadingDesign } = useLoadDesign()
@@ -51,16 +43,105 @@ export default function CustomizePage() {
     debounceMs: 3000,
   })
 
-  // Load design if designId is provided
+  // Load design if designId is provided, load template if templateId is provided, otherwise load default template
   useEffect(() => {
-    if (designId) {
-      loadDesign(designId).then((design) => {
+    const loadContent = async () => {
+      if (designId) {
+        // Load existing saved design
+        const design = await loadDesign(designId)
         if (design) {
           setDesignName(design.designName)
         }
-      })
+      } else if (templateId) {
+        // Load template from session storage or API
+        let template: any = null
+        
+        // First, try to get from session storage (passed from templates page)
+        try {
+          const savedTemplate = sessionStorage.getItem('qc_selected_template_full')
+          if (savedTemplate) {
+            template = JSON.parse(savedTemplate)
+            sessionStorage.removeItem('qc_selected_template_full') // Clean up
+          }
+        } catch (e) {
+          console.error('Failed to parse saved template:', e)
+        }
+        
+        // If not in session storage, fetch from API
+        if (!template) {
+          try {
+            const response = await api.get(`/templates/${templateId}`)
+            template = response.data.data || response.data
+          } catch (error) {
+            console.error('Failed to load template from API:', error)
+          }
+        }
+        
+        if (template) {
+          // Clear canvas
+          const store = useEditorStore.getState()
+          store.reset()
+          
+          // Set template name
+          setDesignName(`${template.name} - Customized`)
+          
+          // Set background from template
+          const bg = template.layoutConfig?.background || '#FFFFFF'
+          setBackground(bg)
+          
+          // Load template elements
+          // Check if template has canvas JSON data
+          if (template.frontCanvasJson && Array.isArray(template.frontCanvasJson)) {
+            // Load pre-defined canvas elements
+            template.frontCanvasJson.forEach((element: any) => {
+              const { id, zIndex, ...elementData } = element
+              addElement(elementData)
+            })
+            toast.success(`Template "${template.name}" loaded!`)
+          } else {
+            // Convert HTML template to canvas elements
+            const { convertTemplateToCanvasElements } = await import('@/lib/template-to-canvas')
+            const elements = convertTemplateToCanvasElements(template, 'front')
+            
+            elements.forEach((element) => {
+              const { id, zIndex, ...elementData } = element
+              addElement(elementData as any)
+            })
+            
+            toast.success(`Template "${template.name}" loaded! Start customizing.`)
+          }
+        } else {
+          toast.error('Failed to load template. Loading default template.')
+          loadDefaultTemplate()
+        }
+      } else if (elements.length === 0) {
+        // Load default template if canvas is empty
+        loadDefaultTemplate()
+      }
     }
-  }, [designId, loadDesign])
+    
+    const loadDefaultTemplate = () => {
+      const defaultTemplate = templates.find(t => t.id === 'default-card')
+      if (defaultTemplate) {
+        setBackground(defaultTemplate.background)
+        defaultTemplate.elements.forEach((element) => {
+          const { id, zIndex, ...elementData } = element
+          addElement(elementData as any)
+        })
+      } else {
+        // If no default template, create basic elements
+        import('@/lib/template-to-canvas').then(({ createDefaultCanvasElements }) => {
+          const defaultElements = createDefaultCanvasElements()
+          defaultElements.forEach((element) => {
+            const { id, zIndex, ...elementData } = element
+            addElement(elementData as any)
+          })
+        })
+      }
+    }
+    
+    loadContent()
+  }, [designId, templateId, loadDesign])
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken')
@@ -118,11 +199,6 @@ export default function CustomizePage() {
     }
   }
 
-  const handleProductOptionsConfirm = (newSelections: Record<string, string>) => {
-    setSelections(newSelections)
-    toast.success('Product options updated successfully!')
-  }
-
   const handleSaveAsNew = async () => {
     if (!designName.trim()) {
       toast.error('Please enter a design name')
@@ -153,6 +229,20 @@ export default function CustomizePage() {
     }
   }
 
+  const handleNext = async () => {
+    // Auto-save before proceeding
+    if (designId) {
+      await manualSave()
+    }
+    
+    // Navigate to product options
+    if (designId) {
+      router.push(`/product-options?designId=${designId}`)
+    } else {
+      router.push('/product-options')
+    }
+  }
+
   const tabs = [
     { id: 'text' as TabType, icon: Type, label: 'Text' },
     { id: 'uploads' as TabType, icon: Image, label: 'Uploads' },
@@ -174,53 +264,44 @@ export default function CustomizePage() {
       {/* Main Editor Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Icon Navigation */}
-        {!isFullCanvas && (
-          <div className="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeTab === tab.id
-              return (
-                <motion.button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative w-14 h-14 rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-600'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="text-[9px] font-medium">{tab.label}</span>
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 border-2 border-blue-500 rounded-xl"
-                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                </motion.button>
-              )
-            })}
-          </div>
-        )}
+        <div className="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-2">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
+            return (
+              <motion.button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative w-14 h-14 rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-[9px] font-medium">{tab.label}</span>
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 border-2 border-blue-500 rounded-xl"
+                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </motion.button>
+            )
+          })}
+        </div>
 
         {/* Sidebar Panel */}
-        {!isFullCanvas && <CustomizeSidebar activeTab={activeTab} />}
+        <CustomizeSidebar activeTab={activeTab} />
 
         {/* Center Canvas Area */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
           {/* Top Action Bar */}
           <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.back()}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Back"
-              >
-                <ArrowLeft className="w-4 h-4 text-gray-600" />
-              </button>
               <div>
                 <h1 className="text-sm font-bold text-gray-900">{designName}</h1>
                 <p className="text-xs text-gray-500">
@@ -232,51 +313,6 @@ export default function CustomizePage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Enhanced Text Editor */}
-              <button
-                onClick={() => setShowEnhancedTextEditor(true)}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-blue-100 hover:from-purple-200 hover:to-blue-200 text-purple-700 text-sm font-medium transition-colors flex items-center gap-2"
-                title="Professional Text Editor"
-              >
-                <Edit3 className="w-4 h-4" />
-                Text Editor
-              </button>
-
-              {/* Change Orientation */}
-              <button
-                onClick={() => setShowOrientationModal(true)}
-                className="px-4 py-2 rounded-lg bg-orange-100 hover:bg-orange-200 text-orange-700 text-sm font-medium transition-colors flex items-center gap-2"
-                title="Change Orientation"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Orientation
-              </button>
-
-              {/* Product Options */}
-              <button
-                onClick={openOptionsModal}
-                className="px-4 py-2 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-700 text-sm font-medium transition-colors flex items-center gap-2"
-                title="Product Options"
-              >
-                <Settings className="w-4 h-4" />
-                Options
-              </button>
-
-              {/* Full Canvas Toggle */}
-              <button
-                onClick={() => setIsFullCanvas(!isFullCanvas)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                title={isFullCanvas ? "Exit Full Canvas" : "Full Canvas Mode"}
-              >
-                {isFullCanvas ? (
-                  <Minimize className="w-4 h-4 text-gray-600" />
-                ) : (
-                  <Maximize className="w-4 h-4 text-gray-600" />
-                )}
-              </button>
-
-              <div className="w-px h-6 bg-gray-200" />
-
               {/* Undo/Redo */}
               <button
                 onClick={undo}
@@ -297,31 +333,24 @@ export default function CustomizePage() {
 
               <div className="w-px h-6 bg-gray-200 mx-2" />
 
-              {/* My Designs */}
+              {/* Preview */}
               <button
-                onClick={() => router.push('/designs')}
-                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors flex items-center gap-2"
-                title="My Designs"
+                onClick={() => setShowPreview(true)}
+                className="px-4 py-2 rounded-lg bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors flex items-center gap-2 border border-gray-300 shadow-sm"
+                title="Preview Design"
               >
-                <FolderOpen className="w-4 h-4" />
-                My Designs
+                <Eye className="w-4 h-4" />
+                Preview
               </button>
 
-              {/* Save */}
+              {/* Next */}
               <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                title="Save (Ctrl+S)"
+                onClick={handleNext}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 text-white text-sm font-semibold transition-opacity flex items-center gap-2 shadow-md"
+                title="Continue to Product Options"
               >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-
-              {/* Download */}
-              <button className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 text-white text-sm font-semibold transition-opacity flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Download
+                Next
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -400,27 +429,8 @@ export default function CustomizePage() {
         </div>
       )}
 
-      {/* Enhanced Text Editor */}
-      <EnhancedTextEditor
-        isOpen={showEnhancedTextEditor}
-        onClose={() => setShowEnhancedTextEditor(false)}
-        canvasWidth={1125}
-        canvasHeight={675}
-      />
-
-      {/* Change Orientation Modal */}
-      <ChangeOrientationModal
-        isOpen={showOrientationModal}
-        onClose={() => setShowOrientationModal(false)}
-      />
-
-      {/* Product Options Modal */}
-      <ProductOptionsModal
-        isOpen={isOptionsModalOpen}
-        onClose={closeOptionsModal}
-        onConfirm={handleProductOptionsConfirm}
-        productType="business-card"
-      />
+      {/* Preview Modal */}
+      <PreviewModal isOpen={showPreview} onClose={() => setShowPreview(false)} />
     </div>
   )
 }

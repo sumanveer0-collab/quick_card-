@@ -79,7 +79,7 @@ export class Design {
   @Prop({ type: Object, required: true })
   canvas: CanvasConfig;
 
-  @Prop({ type: [Object], required: true, default: [] })
+  @Prop({ type: [Object], default: [] })
   elements: CanvasElement[];
 
   @Prop({ default: null })

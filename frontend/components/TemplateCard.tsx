@@ -1,7 +1,8 @@
 'use client'
-import { motion } from 'framer-motion'
-import { Check, Crown, Eye } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Check, Crown, Eye, Pencil, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { replacePlaceholders } from '@/lib/template-engine'
 
 export interface Template {
@@ -9,12 +10,16 @@ export interface Template {
   name: string
   category: string
   previewImage: string
+  thumbnailUrl?: string // Direct thumbnail URL
   isPremium: boolean
+  isFeatured?: boolean // Featured badge
   layoutConfig: Record<string, any>
   frontHTML?: string
   backHTML?: string
   frontCSS?: string
   backCSS?: string
+  description?: string // Short description
+  colorPalette?: string[] // Color palette preview
 }
 
 interface TemplateCardProps {
@@ -22,6 +27,7 @@ interface TemplateCardProps {
   selected: boolean
   onSelect: (t: Template) => void
   onPreview?: (t: Template) => void
+  onCustomize?: (t: Template) => void
   formData?: Record<string, any>
 }
 
@@ -84,9 +90,10 @@ function ThumbnailIframe({ html, title }: { html: string; title: string }) {
   )
 }
 
-export default function TemplateCard({ template, selected, onSelect, onPreview, formData }: TemplateCardProps) {
+export default function TemplateCard({ template, selected, onSelect, onPreview, onCustomize, formData }: TemplateCardProps) {
   const [hovered, setHovered] = useState(false)
   const [showBack, setShowBack] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   const layout = template.layoutConfig || {}
   const bg = layout.background || '#1d4ed8'
@@ -96,6 +103,28 @@ export default function TemplateCard({ template, selected, onSelect, onPreview, 
 
   const hasFrontHTML = !!template.frontHTML
   const hasBackHTML = !!template.backHTML
+
+  // Generate thumbnail URL from template name or use provided thumbnailUrl
+  const getThumbnailUrl = () => {
+    if (template.thumbnailUrl) return template.thumbnailUrl
+    
+    // Generate thumbnail filename from template name
+    const filename = template.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+    
+    return `/templates/thumbnails/${filename}.jpg`
+  }
+
+  const thumbnailUrl = getThumbnailUrl()
+
+  // Extract color palette from layoutConfig
+  const colorPalette = template.colorPalette || [
+    layout.background || '#1d4ed8',
+    layout.accent || '#fbbf24',
+    layout.primaryColor || '#ffffff'
+  ]
 
   const frontDoc = hasFrontHTML
     ? buildThumbnailDoc(template.frontHTML!, template.frontCSS || '', layout, formData, true)
@@ -112,25 +141,52 @@ export default function TemplateCard({ template, selected, onSelect, onPreview, 
 
   return (
     <motion.div
-      whileHover={{ y: -4, scale: 1.02 }}
+      whileHover={{ y: -6, scale: 1.03 }}
       whileTap={{ scale: 0.98 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={handleHoverEnd}
       onClick={() => onSelect(template)}
-      className={`relative cursor-pointer rounded-2xl overflow-hidden transition-all duration-200 ${
+      className={`group relative cursor-pointer rounded-2xl overflow-hidden transition-all duration-300 ${
         selected
-          ? 'ring-2 ring-blue-600 ring-offset-2 shadow-xl shadow-blue-100'
-          : 'ring-1 ring-gray-200 hover:ring-blue-300 hover:shadow-lg'
+          ? 'ring-3 ring-blue-600 ring-offset-2 shadow-2xl shadow-blue-200'
+          : 'ring-1 ring-gray-200 hover:ring-blue-400 hover:shadow-2xl hover:shadow-blue-100'
       }`}
+      style={{
+        background: 'linear-gradient(to bottom, #ffffff, #fafafa)',
+      }}
     >
-      {/* ── Card Preview Area ── */}
+      {/* ── Premium Thumbnail Preview Area ── */}
       <div
-        className="relative overflow-hidden"
-        style={{ aspectRatio: '1.75' }}
+        className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100"
+        style={{ aspectRatio: '16/10' }}
       >
-        {hasFrontHTML ? (
-          /* Iframe-based preview for templates with HTML */
+        {/* Thumbnail Image (if available and no error) */}
+        {!imageError && (
+          <div className="absolute inset-0">
+            <Image
+              src={thumbnailUrl}
+              alt={template.name}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              style={{
+                borderRadius: '16px 16px 0 0',
+              }}
+              onError={() => setImageError(true)}
+              loading="lazy"
+              quality={90}
+            />
+            
+            {/* Subtle gradient overlay for depth */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            {/* Floating card effect shadow */}
+            <div className="absolute inset-0 shadow-inner opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ boxShadow: 'inset 0 0 60px rgba(0,0,0,0.05)' }} />
+          </div>
+        )}
+
+        {/* Fallback: Iframe-based preview if thumbnail fails */}
+        {imageError && hasFrontHTML && (
           <>
             {/* Front face */}
             <div
@@ -155,8 +211,10 @@ export default function TemplateCard({ template, selected, onSelect, onPreview, 
               </div>
             )}
           </>
-        ) : (
-          /* Fallback: layoutConfig-based JSX preview */
+        )}
+
+        {/* Fallback: layoutConfig-based JSX preview if no HTML */}
+        {imageError && !hasFrontHTML && (
           <div
             style={{
               width: '100%', height: '100%',
@@ -201,73 +259,164 @@ export default function TemplateCard({ template, selected, onSelect, onPreview, 
           </div>
         )}
 
-        {/* ── Hover Overlay ── */}
-        {hovered && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 flex flex-col items-center justify-between p-2"
-            style={{ background: 'rgba(0,0,0,0.45)' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Front / Back toggle — only shown when backHTML exists */}
-            {hasBackHTML && (
-              <div className="flex items-center gap-1 bg-white/15 backdrop-blur-sm rounded-full p-0.5 mt-1">
-                <button
-                  onClick={e => { e.stopPropagation(); setShowBack(false) }}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
-                    !showBack ? 'bg-white text-gray-900' : 'text-white hover:bg-white/20'
-                  }`}
-                >
-                  Front
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); setShowBack(true) }}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all ${
-                    showBack ? 'bg-white text-gray-900' : 'text-white hover:bg-white/20'
-                  }`}
-                >
-                  Back
-                </button>
-              </div>
-            )}
-
-            {/* Preview button */}
-            {onPreview && (
-              <button
-                onClick={e => { e.stopPropagation(); onPreview(template) }}
-                className="flex items-center gap-1.5 bg-white text-gray-900 text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-gray-100 transition-colors mb-1"
-              >
-                <Eye className="w-3 h-3" /> Preview
-              </button>
-            )}
-          </motion.div>
-        )}
-      </div>
-
-      {/* ── Footer ── */}
-      <div className="bg-white px-3 py-2 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-gray-800 truncate max-w-[100px]">{template.name}</p>
-          <p className="text-[10px] text-gray-400 capitalize">{template.category}</p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {template.isPremium && (
-            <span className="flex items-center gap-0.5 bg-amber-50 text-amber-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-amber-200">
-              <Crown className="w-2.5 h-2.5" /> PRO
-            </span>
-          )}
-          {selected && (
+        {/* ── Premium Badges (Top Left) ── */}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          {template.isFeatured && (
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center"
+              initial={{ scale: 0, rotate: -12 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[9px] font-bold px-2 py-1 rounded-full shadow-lg"
             >
-              <Check className="w-3 h-3 text-white" strokeWidth={3} />
+              <Sparkles className="w-2.5 h-2.5" /> FEATURED
+            </motion.div>
+          )}
+          {template.isPremium && (
+            <motion.div
+              initial={{ scale: 0, rotate: 12 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.05 }}
+              className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-bold px-2 py-1 rounded-full shadow-lg"
+            >
+              <Crown className="w-2.5 h-2.5" /> PRO
             </motion.div>
           )}
         </div>
+
+        {/* ── Hover Overlay with Actions ── */}
+        <AnimatePresence>
+          {hovered && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 flex flex-col items-center justify-between p-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent backdrop-blur-[2px]"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Front / Back toggle — only shown when backHTML exists */}
+              {hasBackHTML && !imageError && (
+                <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full p-0.5 mt-1 border border-white/30">
+                  <button
+                    onClick={e => { e.stopPropagation(); setShowBack(false) }}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all ${
+                      !showBack ? 'bg-white text-gray-900 shadow-md' : 'text-white hover:bg-white/20'
+                    }`}
+                  >
+                    Front
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); setShowBack(true) }}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-semibold transition-all ${
+                      showBack ? 'bg-white text-gray-900 shadow-md' : 'text-white hover:bg-white/20'
+                    }`}
+                  >
+                    Back
+                  </button>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2 w-full px-2">
+                {/* Preview button */}
+                {onPreview && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={e => { e.stopPropagation(); onPreview(template) }}
+                    className="flex items-center justify-center gap-2 bg-white/95 backdrop-blur-sm text-gray-900 text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-white transition-all shadow-lg"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> Quick Preview
+                  </motion.button>
+                )}
+
+                {/* Customize button */}
+                {onCustomize && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={e => { 
+                      e.stopPropagation()
+                      // Save template to store before navigating
+                      if (typeof window !== 'undefined') {
+                        sessionStorage.setItem('qc_selected_template_full', JSON.stringify(template))
+                      }
+                      onCustomize(template)
+                    }}
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-xl shadow-blue-900/30"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Customize Now
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Glossy shine effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
       </div>
+
+      {/* ── Premium Footer with Details ── */}
+      <div className="bg-white px-4 py-3.5 border-t border-gray-100">
+        {/* Template name and category */}
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-gray-900 truncate leading-tight">
+              {template.name}
+            </h3>
+            <p className="text-[10px] text-gray-400 capitalize mt-0.5">
+              {template.category}
+            </p>
+          </div>
+          
+          {/* Selection indicator */}
+          {selected && (
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              className="w-6 h-6 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg shadow-blue-200 flex-shrink-0 ml-2"
+            >
+              <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+            </motion.div>
+          )}
+        </div>
+
+        {/* Description (if available) */}
+        {template.description && (
+          <p className="text-[10px] text-gray-500 leading-relaxed mb-2.5 line-clamp-2">
+            {template.description}
+          </p>
+        )}
+
+        {/* Color Palette Preview */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            {colorPalette.slice(0, 4).map((color, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: i * 0.05, type: 'spring', stiffness: 400, damping: 15 }}
+                className="w-5 h-5 rounded-full border-2 border-white shadow-sm ring-1 ring-gray-200"
+                style={{ 
+                  background: color.includes('gradient') ? color : color,
+                }}
+                title={`Color ${i + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Hover hint */}
+          <div className="text-[9px] text-gray-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+            Click to select
+          </div>
+        </div>
+      </div>
+
+      {/* Floating shadow effect on hover */}
+      <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10" />
     </motion.div>
   )
 }

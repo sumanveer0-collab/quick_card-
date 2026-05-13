@@ -43,7 +43,8 @@ export interface CanvasElement {
   text?: string
   fontSize?: number
   fontFamily?: string
-  fontWeight?: string
+  fontWeight?: string | number
+  fontStyle?: 'normal' | 'italic'
   fill?: string
   stroke?: string
   strokeWidth?: number
@@ -131,30 +132,7 @@ interface EditorState {
   reset: () => void
 }
 
-const initialElements: CanvasElement[] = [
-  {
-    id: 'el_default_1',
-    type: 'text',
-    text: 'GRAPHIC MITRA STUDIO',
-    x: 100,
-    y: 150,
-    width: 850,
-    height: 100,
-    fontSize: 48,
-    fontFamily: 'Arial',
-    fontWeight: 'bold',
-    fill: '#322F30',
-    align: 'center',
-    verticalAlign: 'middle',
-    letterSpacing: 0,
-    lineHeight: 1.2,
-    rotation: 0,
-    zIndex: 0,
-    visible: true,
-    locked: false,
-    padding: { horizontal: 12, vertical: 8 },
-  },
-]
+const initialElements: CanvasElement[] = []
 
 const initialHistory: EditorHistory = {
   past: [],
@@ -164,7 +142,7 @@ const initialHistory: EditorHistory = {
 
 export const useEditorStore = create<EditorState>((set, get) => ({
   elements: initialElements,
-  selectedId: 'el_default_1', // Select the default element
+  selectedId: null, // No default selection
   zoom: 100,
   showGrid: false,
   showBleed: true,

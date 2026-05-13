@@ -8,20 +8,20 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-bold text-xl text-brand-600">
           <CreditCard className="w-6 h-6" />
           QuickCard
         </Link>
 
         <div className="flex items-center gap-6">
-          <Link href="/marketplace" className="text-sm font-medium text-gray-600 hover:text-brand-600 transition-colors">
+          {/* Navigation Links */}
+          <Link href="/business-card-designs" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            Browse Designs
+          </Link>
+          <Link href="/templates" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
             Templates
           </Link>
-          <Link href="/customize" className="text-sm font-medium text-gray-600 hover:text-brand-600 transition-colors">
-            Editor
-          </Link>
-          
           {user ? (
             <>
               {user.plan === 'free' && (

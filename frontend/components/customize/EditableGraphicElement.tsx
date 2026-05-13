@@ -1,6 +1,6 @@
 'use client'
 import React, { useRef, useEffect } from 'react'
-import { Group, Rect, Circle, Star, RegularPolygon, Arrow, Line } from 'react-konva'
+import { Group, Rect, Circle, Star, RegularPolygon, Arrow, Line, Transformer } from 'react-konva'
 import Konva from 'konva'
 
 interface EditableGraphicElementProps {
@@ -19,13 +19,24 @@ export default function EditableGraphicElement({
   onTransformEnd
 }: EditableGraphicElementProps) {
   const groupRef = useRef<Konva.Group>(null)
+  const transformerRef = useRef<Konva.Transformer>(null)
+
+  // Attach transformer to selected element
+  useEffect(() => {
+    if (isSelected && transformerRef.current && groupRef.current) {
+      transformerRef.current.nodes([groupRef.current])
+      transformerRef.current.getLayer()?.batchDraw()
+    }
+  }, [isSelected])
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     onDragEnd(e.target.x(), e.target.y())
   }
 
   const handleTransformEnd = (e: Konva.KonvaEventObject<Event>) => {
-    const node = e.target as Konva.Group
+    const node = groupRef.current
+    if (!node) return
+    
     const scaleX = node.scaleX()
     const scaleY = node.scaleY()
     
@@ -36,8 +47,8 @@ export default function EditableGraphicElement({
     onTransformEnd({
       x: node.x(),
       y: node.y(),
-      width: element.width * scaleX,
-      height: element.height * scaleY,
+      width: Math.max(10, element.width * scaleX),
+      height: Math.max(10, element.height * scaleY),
       rotation: node.rotation()
     })
   }
@@ -224,33 +235,57 @@ export default function EditableGraphicElement({
   }
 
   return (
-    <Group
-      ref={groupRef}
-      x={element.x}
-      y={element.y}
-      rotation={element.rotation || 0}
-      draggable={!element.locked}
-      onClick={onSelect}
-      onTap={onSelect}
-      onDragEnd={handleDragEnd}
-      onTransformEnd={handleTransformEnd}
-    >
-      {/* Selection border - Removed */}
-      {/* {isSelected && (
-        <Rect
-          x={-5}
-          y={-5}
-          width={element.width + 10}
-          height={element.height + 10}
-          stroke="#2563eb"
-          strokeWidth={2}
-          dash={[5, 5]}
-          fill="transparent"
-        />
-      )} */}
+    <>
+      <Group
+        ref={groupRef}
+        x={element.x}
+        y={element.y}
+        rotation={element.rotation || 0}
+        draggable={!element.locked}
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={handleDragEnd}
+        onTransformEnd={handleTransformEnd}
+        name={`graphic-${element.id}`}
+      >
+        {/* Shape content */}
+        {renderShape()}
+      </Group>
       
-      {/* Shape content */}
-      {renderShape()}
-    </Group>
+      {/* Transformer for resizing */}
+      {isSelected && (
+        <Transformer
+          ref={transformerRef}
+          keepRatio={false}
+          enabledAnchors={[
+            'top-left',
+            'top-right',
+            'bottom-left',
+            'bottom-right',
+            'middle-left',
+            'middle-right',
+            'top-center',
+            'bottom-center'
+          ]}
+          rotateEnabled={true}
+          borderStroke="#3b82f6"
+          borderStrokeWidth={2}
+          anchorFill="#ffffff"
+          anchorStroke="#3b82f6"
+          anchorStrokeWidth={2}
+          anchorSize={12}
+          anchorCornerRadius={6}
+          rotateAnchorOffset={30}
+          padding={5}
+          boundBoxFunc={(oldBox, newBox) => {
+            // Minimum size constraint
+            if (newBox.width < 10 || newBox.height < 10) {
+              return oldBox
+            }
+            return newBox
+          }}
+        />
+      )}
+    </>
   )
 }

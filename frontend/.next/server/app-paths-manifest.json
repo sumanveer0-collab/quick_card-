@@ -1,4 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/customize/page": "app/customize/page.js"
+  "/business-card-designs/page": "app/business-card-designs/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/templates/page": "app/templates/page.js",
+  "/customize/page": "app/customize/page.js",
+  "/page": "app/page.js"
 }
