@@ -3,9 +3,11 @@ import axios from 'axios';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 // Types
+export type ElementType = 'text' | 'image' | 'shape' | 'icon' | 'logo' | 'qr'
+
 export interface CanvasElement {
   id: string;
-  type: 'text' | 'image' | 'shape' | 'logo' | 'qr';
+  type: ElementType;
   x: number;
   y: number;
   width: number;
@@ -16,7 +18,9 @@ export interface CanvasElement {
   text?: string;
   fontSize?: number;
   fontFamily?: string;
-  fontWeight?: string;
+  fontWeight?: string | number;
+  fontStyle?: 'normal' | 'italic';
+  textDecoration?: 'none' | 'underline' | 'line-through';
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
@@ -25,19 +29,28 @@ export interface CanvasElement {
   letterSpacing?: number;
   lineHeight?: number;
   padding?: { horizontal: number; vertical: number };
+  underline?: boolean;
 
   // Image properties
   src?: string;
 
   // Shape properties
-  shapeType?: 'rect' | 'circle' | 'line';
+  shapeType?: 'rect' | 'circle' | 'line' | 'triangle' | 'star' | 'arrow' | 'polygon';
   cornerRadius?: number;
+
+  // Graphic specific (shapes, icons)
+  svg?: string;
+  name?: string;
+  category?: string;
 
   // Layer properties
   zIndex: number;
   locked?: boolean;
   visible?: boolean;
   opacity?: number;
+
+  // Warning flag
+  outsideSafeArea?: boolean;
 }
 
 export interface CanvasConfig {

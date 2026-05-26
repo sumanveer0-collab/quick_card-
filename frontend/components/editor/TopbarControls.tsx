@@ -15,8 +15,6 @@ export default function TopbarControls() {
     setZoom,
     showGrid,
     toggleGrid,
-    showBleed,
-    toggleBleed,
     showTrim,
     toggleTrim,
     showSafety,
@@ -224,16 +222,6 @@ export default function TopbarControls() {
             title="Toggle Grid"
           >
             <Grid className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={toggleBleed}
-            className={`p-2 rounded-lg transition-colors ${
-              showBleed ? 'bg-red-50 text-red-600' : 'hover:bg-gray-100 text-gray-600'
-            }`}
-            title="Toggle Bleed Area"
-          >
-            {showBleed ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
           </button>
 
           <button

@@ -230,17 +230,20 @@ export default function CardDetailPage() {
               <h3 className="text-sm font-semibold text-gray-700 mb-4">Details</h3>
               <div className="space-y-2 text-sm">
                 {[
-                  ['Name', card.name],
-                  ['Phone', card.phone],
-                  ['Email', card.email],
-                  card.address && ['Address', card.address],
-                  card.website && ['Website', card.website],
-                ].filter(Boolean).map(([label, value]) => (
-                  <div key={label as string} className="flex gap-2">
-                    <span className="text-gray-400 w-16 flex-shrink-0">{label}</span>
-                    <span className="text-gray-700 font-medium">{value as string}</span>
-                  </div>
-                ))}
+                  ['Name', card.name] as [string, string],
+                  ['Phone', card.phone] as [string, string],
+                  ['Email', card.email] as [string, string],
+                  card.address ? ['Address', card.address] as [string, string] : null,
+                  card.website ? ['Website', card.website] as [string, string] : null,
+                ].filter(Boolean).map((item) => {
+                  const [label, value] = item!
+                  return (
+                    <div key={label} className="flex gap-2">
+                      <span className="text-gray-400 w-16 flex-shrink-0">{label}</span>
+                      <span className="text-gray-700 font-medium">{value}</span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>

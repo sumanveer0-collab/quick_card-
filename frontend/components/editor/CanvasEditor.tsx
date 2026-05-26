@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { fabric } from 'fabric'
+import * as fabric from 'fabric'
 import { TextObjectData, FabricTextbox, CanvasEditorProps } from '@/types/fabric.types'
 import TextToolbar from './TextToolbar'
 import { generateId } from '@/lib/utils'
@@ -58,7 +58,7 @@ export default function CanvasEditor({
   }, [width, height])
 
   // Handle text selection
-  const handleSelection = useCallback((e: fabric.IEvent) => {
+  const handleSelection = useCallback((e: any) => {
     const activeObject = e.selected?.[0] || e.target
     if (activeObject && activeObject.type === 'textbox') {
       setSelectedText(activeObject as FabricTextbox)
@@ -73,7 +73,7 @@ export default function CanvasEditor({
   }, [])
 
   // Handle object modification (resize, move, rotate)
-  const handleObjectModified = useCallback((e: fabric.IEvent) => {
+  const handleObjectModified = useCallback((e: any) => {
     const obj = e.target as FabricTextbox
     if (obj && obj.type === 'textbox' && obj.id) {
       updateTextObjectData(obj)
@@ -82,7 +82,7 @@ export default function CanvasEditor({
   }, [])
 
   // Handle text content changes
-  const handleTextChanged = useCallback((e: fabric.IEvent) => {
+  const handleTextChanged = useCallback((e: any) => {
     const obj = e.target as FabricTextbox
     if (obj && obj.type === 'textbox' && obj.id) {
       updateTextObjectData(obj)
@@ -91,7 +91,7 @@ export default function CanvasEditor({
   }, [])
 
   // Handle double click to enter edit mode
-  const handleDoubleClick = useCallback((e: fabric.IEvent) => {
+  const handleDoubleClick = useCallback((e: any) => {
     const obj = e.target as FabricTextbox
     if (obj && obj.type === 'textbox') {
       obj.enterEditing()

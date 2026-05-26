@@ -218,7 +218,7 @@ export class DesignService {
 
     const totalElements = designs.reduce((sum, design) => sum + design.elements.length, 0);
     const lastModified = designs.length > 0 
-      ? new Date(Math.max(...designs.map(d => new Date(d.updatedAt).getTime())))
+      ? new Date(Math.max(...designs.map(d => new Date((d as any).updatedAt).getTime())))
       : null;
 
     return {

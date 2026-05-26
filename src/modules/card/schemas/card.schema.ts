@@ -83,4 +83,3 @@ export class Card {
 
 export const CardSchema = SchemaFactory.createForClass(Card);
 CardSchema.index({ userId: 1, createdAt: -1 });
-CardSchema.index({ shareSlug: 1 });

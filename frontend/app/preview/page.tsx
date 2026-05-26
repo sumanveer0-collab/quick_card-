@@ -437,18 +437,21 @@ export default function PreviewPage() {
               <h3 className="font-semibold text-gray-900 mb-4">Card Details</h3>
               <div className="space-y-2.5">
                 {[
-                  ['Name', cardData.name],
-                  ['Business', cardData.businessName],
-                  ['Phone', cardData.phone],
-                  ['Email', cardData.email],
-                  cardData.website && ['Website', cardData.website],
-                  cardData.address && ['Address', cardData.address],
-                ].filter(Boolean).map(([label, value]) => (
-                  <div key={label as string} className="flex gap-3">
-                    <span className="text-xs text-gray-400 w-16 flex-shrink-0 pt-0.5">{label}</span>
-                    <span className="text-xs text-gray-700 font-medium break-all">{value as string}</span>
-                  </div>
-                ))}
+                  ['Name', cardData.name] as [string, string],
+                  ['Business', cardData.businessName] as [string, string],
+                  ['Phone', cardData.phone] as [string, string],
+                  ['Email', cardData.email] as [string, string],
+                  cardData.website ? ['Website', cardData.website] as [string, string] : null,
+                  cardData.address ? ['Address', cardData.address] as [string, string] : null,
+                ].filter(Boolean).map((item) => {
+                  const [label, value] = item!
+                  return (
+                    <div key={label} className="flex gap-3">
+                      <span className="text-xs text-gray-400 w-16 flex-shrink-0 pt-0.5">{label}</span>
+                      <span className="text-xs text-gray-700 font-medium break-all">{value}</span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </motion.div>

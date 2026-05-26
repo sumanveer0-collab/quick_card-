@@ -56,7 +56,7 @@ export default function AdvancedTextToolbar() {
   if (!element || element.type !== 'text') return null
 
   const isBold = element.fontWeight === 'bold' || element.fontWeight === '700' || element.fontWeight === '800'
-  const isItalic = element.fontWeight?.includes('italic')
+  const isItalic = element.fontStyle === 'italic'
   const isUnderline = element.text?.includes('<u>') // Simple check, can be enhanced
 
   // Font Size Slider
@@ -228,7 +228,8 @@ export default function AdvancedTextToolbar() {
           </button>
           <button
             onClick={() => {
-              const baseWeight = element.fontWeight?.replace('italic', '').trim() || 'normal'
+              const fw = String(element.fontWeight || 'normal')
+              const baseWeight = fw.replace('italic', '').trim() || 'normal'
               updateElement(selectedId!, { fontWeight: isItalic ? baseWeight : `${baseWeight} italic` })
             }}
             className={`p-2 rounded-lg transition-all ${isItalic ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-600'}`}

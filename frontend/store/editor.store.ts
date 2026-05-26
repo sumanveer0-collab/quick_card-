@@ -45,14 +45,16 @@ export interface CanvasElement {
   fontFamily?: string
   fontWeight?: string | number
   fontStyle?: 'normal' | 'italic'
+  textDecoration?: 'none' | 'underline' | 'line-through'
   fill?: string
   stroke?: string
   strokeWidth?: number
-  align?: 'left' | 'center' | 'right'
+  align?: 'left' | 'center' | 'right' | 'justify'
   verticalAlign?: 'top' | 'middle' | 'bottom'
   letterSpacing?: number
   lineHeight?: number
   padding?: { horizontal: number; vertical: number }
+  underline?: boolean
   // Image specific
   src?: string
   // Shape specific
@@ -326,7 +328,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedId: null,
       zoom: 100,
       showGrid: false,
-      showBleed: true,
+  showBleed: false,
       showTrim: true,
       showSafety: true,
       snapToGrid: true,

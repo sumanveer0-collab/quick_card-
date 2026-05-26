@@ -85,7 +85,6 @@ export default function CanvasPreview() {
     updateElement,
     zoom,
     showGrid,
-    showBleed,
     showTrim,
     showSafety,
     snapToGrid,
@@ -249,70 +248,6 @@ export default function CanvasPreview() {
                       listening={false}
                     />
                   ))}
-                </>
-              )}
-
-              {/* Bleed Area Overlay (Red semi-transparent) */}
-              {showBleed && (
-                <>
-                  {/* Top bleed */}
-                  <Rect
-                    x={0}
-                    y={0}
-                    width={CANVAS_WIDTH_PX}
-                    height={BLEED_PX}
-                    fill="rgba(239, 68, 68, 0.15)"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    dash={[10, 5]}
-                    listening={false}
-                  />
-                  {/* Bottom bleed */}
-                  <Rect
-                    x={0}
-                    y={CANVAS_HEIGHT_PX - BLEED_PX}
-                    width={CANVAS_WIDTH_PX}
-                    height={BLEED_PX}
-                    fill="rgba(239, 68, 68, 0.15)"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    dash={[10, 5]}
-                    listening={false}
-                  />
-                  {/* Left bleed */}
-                  <Rect
-                    x={0}
-                    y={BLEED_PX}
-                    width={BLEED_PX}
-                    height={CARD_HEIGHT_PX}
-                    fill="rgba(239, 68, 68, 0.15)"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    dash={[10, 5]}
-                    listening={false}
-                  />
-                  {/* Right bleed */}
-                  <Rect
-                    x={CANVAS_WIDTH_PX - BLEED_PX}
-                    y={BLEED_PX}
-                    width={BLEED_PX}
-                    height={CARD_HEIGHT_PX}
-                    fill="rgba(239, 68, 68, 0.15)"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    dash={[10, 5]}
-                    listening={false}
-                  />
-                  {/* Bleed label */}
-                  <Text
-                    x={10}
-                    y={10}
-                    text="BLEED AREA (0.125″)"
-                    fontSize={14}
-                    fill="#ef4444"
-                    fontStyle="bold"
-                    listening={false}
-                  />
                 </>
               )}
 
