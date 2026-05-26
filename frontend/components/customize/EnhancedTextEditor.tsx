@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Type, Edit3, X } from 'lucide-react'
 // import FabricTextEditor from '../editor/FabricTextEditor'
-import { useEditorStore } from '@/store/editor.store'
+import { useEditorStore, type CanvasElement } from '@/store/editor.store'
 // import { TextObjectData } from '@/types/fabric.types'
 
 interface EnhancedTextEditorProps {
@@ -82,7 +82,7 @@ export default function EnhancedTextEditor({
       if (existingElement) {
         updateElement(textObj.id, elementData)
       } else {
-        addElement({ ...elementData, id: textObj.id })
+        addElement(elementData as Omit<CanvasElement, 'id' | 'zIndex'>)
       }
     })
   }

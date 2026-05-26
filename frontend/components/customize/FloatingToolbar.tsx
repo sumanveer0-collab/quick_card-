@@ -22,7 +22,7 @@ export default function FloatingToolbar() {
 
   const isTextElement = element.type === 'text'
   const isBold = element.fontWeight === 'bold' || element.fontWeight === '700'
-  const isItalic = element.fontWeight?.includes('italic')
+  const isItalic = element.fontStyle === 'italic'
 
   const handleFontChange = (fontFamily: string) => {
     // Calculate required height for new font family
@@ -160,9 +160,8 @@ export default function FloatingToolbar() {
   }
 
   const handleToggleItalic = () => {
-    const baseWeight = element.fontWeight?.replace('italic', '').trim() || 'normal'
-    updateElement(selectedId!, { 
-      fontWeight: isItalic ? baseWeight : `${baseWeight} italic` 
+    updateElement(selectedId!, {
+      fontStyle: isItalic ? 'normal' : 'italic',
     })
   }
 

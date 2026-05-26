@@ -1,0 +1,7 @@
+{
+  "/business-cards/editor/[id]/page": "app/business-cards/editor/[id]/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/editor/page": "app/editor/page.js",
+  "/business-cards/search/page": "app/business-cards/search/page.js"
+}

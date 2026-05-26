@@ -38,7 +38,7 @@ export default function VistaprintStyleToolbar() {
   if (!element || element.type !== 'text') return null
 
   const isBold = element.fontWeight === 'bold' || element.fontWeight === '700'
-  const isItalic = element.fontWeight?.includes('italic')
+  const isItalic = element.fontStyle === 'italic'
   const currentFontSize = element.fontSize || 16
 
   const handleFontChange = (fontFamily: string) => {
@@ -64,9 +64,8 @@ export default function VistaprintStyleToolbar() {
   }
 
   const handleToggleItalic = () => {
-    const baseWeight = element.fontWeight?.replace('italic', '').trim() || 'normal'
-    updateElement(selectedId!, { 
-      fontWeight: isItalic ? baseWeight : `${baseWeight} italic` 
+    updateElement(selectedId!, {
+      fontStyle: isItalic ? 'normal' : 'italic',
     })
   }
 

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Plus, Star, Sparkles, TrendingUp, Briefcase, Palette, Camera, Stethoscope, Home, Utensils, Code, QrCode } from 'lucide-react';
 import Link from 'next/link';
@@ -23,9 +24,15 @@ const categories = [
 ];
 
 export default function BusinessCardsPage() {
+  const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const q = searchParams.get('q') ?? searchParams.get('tags');
+    if (q) setSearchQuery(q);
+  }, [searchParams]);
 
   const filteredTemplates = useMemo(() => {
     return businessCardTemplates.filter(template => {
@@ -109,7 +116,16 @@ export default function BusinessCardsPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
+              <Link href="/business-cards/search">
+                <button
+                  type="button"
+                  className="px-8 py-4 bg-white/10 backdrop-blur-md border border-white/25 rounded-2xl font-semibold text-white hover:bg-white/20 transition-all"
+                >
+                  Browse All Templates
+                </button>
+              </Link>
               <Link href="/business-cards/editor/new">
                 <button className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl font-semibold text-white shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/60 transition-all duration-300 hover:scale-105">
                   <span className="flex items-center gap-2">

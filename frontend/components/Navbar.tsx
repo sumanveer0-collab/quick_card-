@@ -16,6 +16,9 @@ export default function Navbar() {
 
         <div className="flex items-center gap-6">
           {/* Navigation Links */}
+          <Link href="/business-cards/search" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+            Business Cards
+          </Link>
           <Link href="/business-card-designs" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
             Browse Designs
           </Link>

@@ -57,6 +57,13 @@ export interface CanvasElement {
   underline?: boolean
   // Image specific
   src?: string
+  brightness?: number
+  contrast?: number
+  saturation?: number
+  blur?: number
+  sharpen?: number
+  scaleX?: number
+  scaleY?: number
   // Shape specific
   shapeType?: 'rect' | 'circle' | 'line' | 'triangle' | 'star' | 'arrow' | 'polygon'
   cornerRadius?: number
