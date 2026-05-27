@@ -1,7 +1,10 @@
 {
-  "/business-cards/editor/[id]/page": "app/business-cards/editor/[id]/page.js",
-  "/login/page": "app/login/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
-  "/editor/page": "app/editor/page.js",
+  "/login/page": "app/login/page.js",
+  "/business-cards/editor/[id]/page": "app/business-cards/editor/[id]/page.js",
+  "/business-card-designs/page": "app/business-card-designs/page.js",
+  "/customize/page": "app/customize/page.js",
+  "/templates/page": "app/templates/page.js",
   "/business-cards/search/page": "app/business-cards/search/page.js"
 }

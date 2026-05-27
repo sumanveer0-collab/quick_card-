@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { BusinessCardCatalogItem } from '@/types/business-card-catalog.types';
-import BusinessCardMiniPreview from './BusinessCardMiniPreview';
+// import BusinessCardMiniPreview from './BusinessCardMiniPreview';
 
 interface SearchGridCardProps {
   item: BusinessCardCatalogItem;
@@ -46,7 +46,7 @@ export default function SearchGridCard({
 
         <div className="aspect-[1.75] bg-gray-50 p-2">
           <div className="w-full h-full rounded shadow-sm overflow-hidden ring-1 ring-black/5 group-hover:ring-brand-500/30 transition-all">
-            <BusinessCardMiniPreview preview={item.preview} businessName={businessName} />
+            {/* <BusinessCardMiniPreview preview={item.preview} businessName={businessName} /> */}
           </div>
         </div>
 

@@ -642,9 +642,6 @@ body { font-family: 'Inter', sans-serif; --tw-bg-opacity: 1; background-color: r
 .bottom-2{
   bottom: 0.5rem;
 }
-.bottom-3{
-  bottom: 0.75rem;
-}
 .bottom-8{
   bottom: 2rem;
 }
@@ -996,9 +993,6 @@ body { font-family: 'Inter', sans-serif; --tw-bg-opacity: 1; background-color: r
 .h-96{
   height: 24rem;
 }
-.h-\[45\%\]{
-  height: 45%;
-}
 .h-\[90vh\]{
   height: 90vh;
 }
@@ -1136,9 +1130,6 @@ body { font-family: 'Inter', sans-serif; --tw-bg-opacity: 1; background-color: r
 }
 .w-96{
   width: 24rem;
-}
-.w-\[28\%\]{
-  width: 28%;
 }
 .w-full{
   width: 100%;
@@ -2527,9 +2518,6 @@ body { font-family: 'Inter', sans-serif; --tw-bg-opacity: 1; background-color: r
 .pl-9{
   padding-left: 2.25rem;
 }
-.pl-\[32\%\]{
-  padding-left: 32%;
-}
 .pr-10{
   padding-right: 2.5rem;
 }
@@ -2547,9 +2535,6 @@ body { font-family: 'Inter', sans-serif; --tw-bg-opacity: 1; background-color: r
 }
 .pr-4{
   padding-right: 1rem;
-}
-.pr-\[32\%\]{
-  padding-right: 32%;
 }
 .pt-0{
   padding-top: 0px;
@@ -2611,9 +2596,6 @@ body { font-family: 'Inter', sans-serif; --tw-bg-opacity: 1; background-color: r
 }
 .text-\[11px\]{
   font-size: 11px;
-}
-.text-\[5px\]{
-  font-size: 5px;
 }
 .text-\[6px\]{
   font-size: 6px;
@@ -2951,9 +2933,6 @@ body { font-family: 'Inter', sans-serif; --tw-bg-opacity: 1; background-color: r
 .opacity-100{
   opacity: 1;
 }
-.opacity-20{
-  opacity: 0.2;
-}
 .opacity-30{
   opacity: 0.3;
 }
@@ -2963,17 +2942,11 @@ body { font-family: 'Inter', sans-serif; --tw-bg-opacity: 1; background-color: r
 .opacity-50{
   opacity: 0.5;
 }
-.opacity-60{
-  opacity: 0.6;
-}
 .opacity-70{
   opacity: 0.7;
 }
 .opacity-80{
   opacity: 0.8;
-}
-.opacity-90{
-  opacity: 0.9;
 }
 .shadow{
   --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
