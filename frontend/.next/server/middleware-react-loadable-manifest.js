@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"app\\\\customize\\\\page.tsx -> @/lib/template-to-canvas\":{\"id\":\"app\\\\customize\\\\page.tsx -> @/lib/template-to-canvas\",\"files\":[\"static/chunks/_app-pages-browser_lib_template-to-canvas_ts.js\"]}}"
+self.__REACT_LOADABLE_MANIFEST="{}"
