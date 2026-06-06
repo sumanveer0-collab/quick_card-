@@ -1,4 +1,3 @@
 {
-  "/customize/page": "app/customize/page.js",
-  "/product-options/page": "app/product-options/page.js"
+  "/customize/page": "app/customize/page.js"
 }

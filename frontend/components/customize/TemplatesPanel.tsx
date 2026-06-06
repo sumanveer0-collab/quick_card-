@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { Search, X, Check, Crown, Loader2 } from 'lucide-react'
 import { replacePlaceholders } from '@/lib/template-engine'
 
-const CATEGORIES = ['All', 'minimal', 'professional', 'creative', 'corporate', 'food', 'beauty', 'fitness']
+const ALL_CAT = 'All'
 
 interface ApiTemplate {
   _id: string
@@ -118,23 +118,36 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [viewMode, setViewMode] = useState<'all' | 'categories'>('all')
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-    fetch(`${apiUrl}/templates?limit=60`)
-      .then(r => r.json())
+    fetch(`${apiUrl}/templates?limit=100`)
+      .then(r => {
+        if (!r.ok) throw new Error('API error')
+        return r.json()
+      })
       .then(json => {
         const raw = json.data
         const list: ApiTemplate[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : []
-        setApiTemplates(list)
+        if (list.length > 0) setApiTemplates(list)
       })
-      .catch(() => {})
+      .catch(() => {
+        // API down — stay with empty list, show message
+      })
       .finally(() => setLoading(false))
   }, [])
 
+  // Build category list dynamically from loaded templates
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(apiTemplates.map(t => t.category).filter(Boolean)))
+    cats.sort()
+    return [ALL_CAT, ...cats]
+  }, [apiTemplates])
+
   const filtered = useMemo(() => {
     let list = apiTemplates
-    if (activeCategory !== 'All') list = list.filter(t => t.category === activeCategory)
+    if (activeCategory !== ALL_CAT) list = list.filter(t => t.category === activeCategory)
     if (search.trim()) list = list.filter(t =>
       t.name.toLowerCase().includes(search.toLowerCase()) ||
       t.category.toLowerCase().includes(search.toLowerCase())
@@ -192,86 +205,122 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
         </div>
 
         {/* ALL / CATEGORIES tabs */}
-        <div className="flex gap-1 mb-2">
+        <div className="flex border-b border-gray-200 mb-3">
           <button
-            onClick={() => setActiveCategory('All')}
-            className={`px-3 py-1 text-[11px] font-bold rounded transition-colors ${
-              activeCategory === 'All'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-500 hover:text-gray-800'
+            onClick={() => { setViewMode('all'); setActiveCategory(ALL_CAT) }}
+            className={`flex-1 py-2 text-[11px] font-bold transition-colors border-b-2 ${
+              viewMode === 'all'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-400 hover:text-gray-700'
             }`}
           >
             ALL
           </button>
           <button
-            className="px-3 py-1 text-[11px] font-semibold text-gray-400 hover:text-gray-700 rounded"
-            onClick={() => {}}
+            onClick={() => setViewMode('categories')}
+            className={`flex-1 py-2 text-[11px] font-bold transition-colors border-b-2 ${
+              viewMode === 'categories'
+                ? 'border-red-500 text-red-500'
+                : 'border-transparent text-gray-400 hover:text-gray-700'
+            }`}
           >
             CATEGORIES
           </button>
         </div>
 
-        {/* Category pills */}
-        <div className="flex flex-wrap gap-1.5">
-          {CATEGORIES.slice(1).map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(activeCategory === cat ? 'All' : cat)}
-              className={`px-2.5 py-1 text-[10px] font-medium rounded-full border capitalize transition-colors ${
-                activeCategory === cat
-                  ? 'bg-blue-50 border-blue-400 text-blue-700'
-                  : 'border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {/* Category filter pills — removed, use CATEGORIES tab instead */}
       </div>
 
-      {/* Grid */}
+      {/* Grid / Categories view */}
       <div className="flex-1 overflow-y-auto px-3 py-3" style={{ scrollbarWidth: 'thin' }}>
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-gray-400">No templates found</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {visible.map(tmpl => (
-              <div key={tmpl._id} className="space-y-1">
-                <TemplateThumbnail
-                  tmpl={tmpl}
-                  selected={selectedId === tmpl._id}
-                  onClick={() => handleApply(tmpl)}
-                />
-                {/* Name below thumbnail */}
-                <div className="flex items-center justify-between px-0.5">
-                  <span className="text-[10px] text-gray-500 truncate capitalize">{tmpl.category}</span>
-                  <button
-                    onClick={() => handleApply(tmpl)}
-                    disabled={applying && selectedId === tmpl._id}
-                    className="text-[10px] text-blue-500 hover:text-blue-700 font-semibold"
-                  >
-                    {applying && selectedId === tmpl._id ? 'Applying...' : 'Use Template →'}
-                  </button>
-                </div>
-              </div>
-            ))}
 
-            {/* LOAD MORE TEMPLATES button */}
-            {hasMore && (
+        {/* ── CATEGORIES view — dark button grid like BrandCrowd ── */}
+        {viewMode === 'categories' && (
+          <div>
+            <p className="text-[10px] text-gray-400 mb-3">Select a category to browse</p>
+            <div className="grid grid-cols-2 gap-2">
+              {categories.slice(1).map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => { setActiveCategory(cat); setViewMode('all') }}
+                  className={`py-3 px-3 rounded-lg text-[11px] font-bold capitalize text-left transition-all ${
+                    activeCategory === cat
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-800 text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+              {/* "All Templates" button */}
               <button
-                onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-                className="w-full py-2.5 mt-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                onClick={() => { setActiveCategory(ALL_CAT); setViewMode('all') }}
+                className="py-3 px-3 rounded-lg text-[11px] font-bold text-left bg-blue-700 text-white hover:bg-blue-600 transition-all col-span-2"
               >
-                LOAD MORE TEMPLATES
+                ✦ All Templates ({apiTemplates.length})
               </button>
-            )}
+            </div>
           </div>
+        )}
+
+        {/* ── ALL view — template thumbnails ── */}
+        {viewMode === 'all' && (
+          <>
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-12 px-4">
+                {apiTemplates.length === 0 ? (
+                  <>
+                    <div className="text-3xl mb-3">🔌</div>
+                    <p className="text-xs font-semibold text-gray-600 mb-1">Server not connected</p>
+                    <p className="text-[11px] text-gray-400">Start the backend to load templates</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-400">No templates in "{activeCategory}"</p>
+                    <button onClick={() => setActiveCategory(ALL_CAT)}
+                      className="mt-2 text-[11px] text-blue-500 hover:text-blue-700 font-medium">
+                      Show all templates
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {visible.map(tmpl => (
+                  <div key={tmpl._id} className="space-y-1">
+                    <TemplateThumbnail
+                      tmpl={tmpl}
+                      selected={selectedId === tmpl._id}
+                      onClick={() => handleApply(tmpl)}
+                    />
+                    <div className="flex items-center justify-between px-0.5">
+                      <span className="text-[10px] text-gray-500 truncate capitalize">{tmpl.category}</span>
+                      <button
+                        onClick={() => handleApply(tmpl)}
+                        disabled={applying && selectedId === tmpl._id}
+                        className="text-[10px] text-blue-500 hover:text-blue-700 font-semibold"
+                      >
+                        {applying && selectedId === tmpl._id ? 'Applying...' : 'Use Template →'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {hasMore && (
+                  <button
+                    onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                    className="w-full py-2.5 mt-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  >
+                    LOAD MORE TEMPLATES
+                  </button>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
