@@ -21,6 +21,77 @@ import CanvasTextEditor from './CanvasTextEditor'
 import ImageEditorToolbar from './ImageEditorToolbar'
 import FilteredImage from './FilteredImage'
 import VistaprintFloatingToolbar from './VistaprintFloatingToolbar'
+import { replacePlaceholders } from '@/lib/template-engine'
+
+// ── Template HTML iframe rendered behind Konva stage ──────────────────────
+function TemplateIframe({ displayScale }: { displayScale: number }) {
+  const { templateHtml, templateCss, background } = useEditorStore()
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  useEffect(() => {
+    const el = iframeRef.current
+    if (!el || !templateHtml) return
+
+    const filled = replacePlaceholders(templateHtml, {
+      name: 'Full Name',
+      businessName: 'LOGO TEXT HERE',
+      phone: '+91 99999 99999',
+      email: 'hello@example.com',
+      website: 'www.example.com',
+      address: '123 Main Street, City',
+      tagline: 'Slogan Here',
+      logoUrl: '',
+      qrCodeUrl: '',
+    })
+
+    const doc = `<!DOCTYPE html><html><head>
+<meta charset="UTF-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Poppins:wght@400;600;700;800&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif;}
+${templateCss || ''}
+</style>
+</head><body>${filled}</body></html>`
+
+    const docObj = el.contentDocument
+    if (docObj) { docObj.open(); docObj.write(doc); docObj.close() }
+  }, [templateHtml, templateCss, background])
+
+  if (!templateHtml) return null
+
+  // The iframe is written at full canvas resolution (1125×675)
+  // then scaled down with transform to match the display scale
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: `${CANVAS_WIDTH_PX * displayScale}px`,
+        height: `${CANVAS_HEIGHT_PX * displayScale}px`,
+        overflow: 'hidden',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}
+    >
+      <iframe
+        ref={iframeRef}
+        title="template-preview"
+        sandbox="allow-same-origin"
+        style={{
+          width: `${CANVAS_WIDTH_PX}px`,
+          height: `${CANVAS_HEIGHT_PX}px`,
+          border: 'none',
+          display: 'block',
+          transform: `scale(${displayScale})`,
+          transformOrigin: 'top left',
+          pointerEvents: 'none',
+        }}
+      />
+    </div>
+  )
+}
 
 export default function CustomizeCanvas() {
   const {
@@ -36,6 +107,7 @@ export default function CustomizeCanvas() {
     gridSize,
     background,
     setBackground,
+    templateHtml,
   } = useEditorStore()
 
   const stageRef = useRef<any>(null)
@@ -397,9 +469,12 @@ export default function CustomizeCanvas() {
           style={{
             width: stageSize.width,
             height: stageSize.height,
-            background: getBackgroundStyle(),
+            background: templateHtml ? 'transparent' : getBackgroundStyle(),
           }}
         >
+          {/* ── Template HTML iframe (rendered behind Konva stage) ── */}
+          <TemplateIframe displayScale={displayScale} />
+
           <Stage
             ref={stageRef}
             width={CANVAS_WIDTH_PX}
@@ -409,6 +484,7 @@ export default function CustomizeCanvas() {
             onMouseDown={handleDeselect}
             onTouchStart={handleDeselect}
             onContextMenu={handleContextMenu}
+            style={{ position: 'relative', zIndex: 1, background: 'transparent' }}
           >
             <Layer
               clipX={BLEED_PX}
@@ -468,62 +544,9 @@ export default function CustomizeCanvas() {
                   }
 
                   if (element.type === 'shape') {
-                    if (element.shapeType === 'rect') {
-                      return (
-                        <Rect
-                          key={element.id}
-                          x={element.x}
-                          y={element.y}
-                          width={element.width}
-                          height={element.height}
-                          fill={element.fill}
-                          stroke={element.stroke}
-                          strokeWidth={element.strokeWidth}
-                          cornerRadius={element.cornerRadius}
-                          rotation={element.rotation}
-                          draggable
-                          onClick={() => handleSelect(element.id)}
-                          onTap={() => handleSelect(element.id)}
-                          onDragEnd={(e) => handleDragEnd(element, e.target.x(), e.target.y())}
-                        />
-                      )
-                    }
-
-                    if (element.shapeType === 'circle') {
-                      return (
-                        <Circle
-                          key={element.id}
-                          x={element.x + element.width / 2}
-                          y={element.y + element.height / 2}
-                          radius={element.width / 2}
-                          fill={element.fill}
-                          stroke={element.stroke}
-                          strokeWidth={element.strokeWidth}
-                          rotation={element.rotation}
-                          draggable
-                          onClick={() => handleSelect(element.id)}
-                          onTap={() => handleSelect(element.id)}
-                          onDragEnd={(e) => {
-                            handleDragEnd(element, e.target.x() - element.width / 2, e.target.y() - element.height / 2)
-                          }}
-                        />
-                      )
-                    }
-
-                    if (element.shapeType === 'line') {
-                      return (
-                        <Line
-                          key={element.id}
-                          points={[element.x, element.y, element.x + element.width, element.y]}
-                          stroke={element.stroke}
-                          strokeWidth={element.strokeWidth}
-                          draggable
-                          onClick={() => handleSelect(element.id)}
-                          onTap={() => handleSelect(element.id)}
-                          onDragEnd={(e) => handleDragEnd(element, e.target.x(), e.target.y())}
-                        />
-                      )
-                    }
+                    // All shapes — including rect, circle, line — go through
+                    // SVGGraphicElement (if svg present) or EditableGraphicElement
+                    // so that the Transformer resize handles are always attached.
                   }
 
                   if (element.type === 'image') {

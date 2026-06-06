@@ -1,7 +1,6 @@
 'use client'
-import React, { useMemo } from 'react'
-import { Star } from 'lucide-react'
-import GraphicCard from './GraphicCard'
+import React, { useMemo, useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { ALL_ICONS } from '@/lib/graphics/icons'
 import { generateId } from '@/lib/utils'
 
@@ -11,14 +10,18 @@ interface IconsSectionProps {
 }
 
 export default function IconsSection({ searchTerm, onAddElement }: IconsSectionProps) {
+  const [showAll, setShowAll] = useState(false)
+
   const filteredIcons = useMemo(() => {
     if (!searchTerm) return ALL_ICONS
     return ALL_ICONS.filter(icon =>
       icon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       icon.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      icon.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm.toLowerCase()))
+      icon.keywords.some(k => k.toLowerCase().includes(searchTerm.toLowerCase()))
     )
   }, [searchTerm])
+
+  const visibleIcons = showAll ? filteredIcons : filteredIcons.slice(0, 9)
 
   const handleAddIcon = (icon: any) => {
     onAddElement({
@@ -34,11 +37,11 @@ export default function IconsSection({ searchTerm, onAddElement }: IconsSectionP
       strokeWidth: 0,
       opacity: 1,
       rotation: 0,
-      x: Math.random() * 200 + 100,
-      y: Math.random() * 200 + 100,
+      x: 100 + Math.random() * 150,
+      y: 100 + Math.random() * 100,
       visible: true,
       locked: false,
-      zIndex: Date.now()
+      zIndex: Date.now(),
     })
   }
 
@@ -46,31 +49,35 @@ export default function IconsSection({ searchTerm, onAddElement }: IconsSectionP
 
   return (
     <section>
-      {/* Section Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-          <Star className="w-4 h-4 text-purple-600" />
-        </div>
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Icons</h3>
-          <p className="text-xs text-gray-500">{filteredIcons.length} items</p>
+          <span className="text-xs font-bold text-gray-900">Icons</span>
+          <span className="ml-1.5 text-[10px] text-gray-400">{filteredIcons.length} items</span>
         </div>
+        {filteredIcons.length > 9 && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="flex items-center gap-0.5 text-[10px] text-blue-500 hover:text-blue-700 font-medium"
+          >
+            {showAll ? 'Show less' : 'See all'} <ChevronRight className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
-      {/* Icons Grid - 4 columns for smaller icons */}
-      <div className="grid grid-cols-4 gap-2">
-        {filteredIcons.map((icon, index) => (
-          <GraphicCard
+      <div className="grid grid-cols-3 gap-2">
+        {visibleIcons.map(icon => (
+          <button
             key={icon.id}
             onClick={() => handleAddIcon(icon)}
-            delay={index * 0.02}
+            title={icon.name}
+            className="aspect-square flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all duration-150 p-3 group"
           >
-            <div 
-              className="w-full h-full flex items-center justify-center text-gray-700"
+            <div
+              className="w-full h-full flex items-center justify-center text-gray-900 group-hover:text-blue-600 transition-colors"
+              style={{ color: '#111827' }}
               dangerouslySetInnerHTML={{ __html: icon.svg }}
-              title={icon.name}
             />
-          </GraphicCard>
+          </button>
         ))}
       </div>
     </section>

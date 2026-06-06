@@ -1,8 +1,6 @@
 'use client'
-import React, { useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Shapes } from 'lucide-react'
-import GraphicCard from './GraphicCard'
+import React, { useMemo, useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { ALL_SHAPES } from '@/lib/graphics/shapes'
 import { generateId } from '@/lib/utils'
 
@@ -12,6 +10,8 @@ interface ShapesSectionProps {
 }
 
 export default function ShapesSection({ searchTerm, onAddElement }: ShapesSectionProps) {
+  const [showAll, setShowAll] = useState(false)
+
   const filteredShapes = useMemo(() => {
     if (!searchTerm) return ALL_SHAPES
     return ALL_SHAPES.filter(shape =>
@@ -19,6 +19,8 @@ export default function ShapesSection({ searchTerm, onAddElement }: ShapesSectio
       shape.category.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [searchTerm])
+
+  const visibleShapes = showAll ? filteredShapes : filteredShapes.slice(0, 9)
 
   const handleAddShape = (shape: any) => {
     onAddElement({
@@ -30,16 +32,16 @@ export default function ShapesSection({ searchTerm, onAddElement }: ShapesSectio
       svg: shape.svg,
       width: shape.defaultWidth,
       height: shape.defaultHeight,
-      fill: '#3b82f6',
+      fill: '#1a1a1a',
       stroke: 'none',
       strokeWidth: 0,
       opacity: 1,
       rotation: 0,
-      x: Math.random() * 200 + 100,
-      y: Math.random() * 200 + 100,
+      x: 100 + Math.random() * 150,
+      y: 100 + Math.random() * 100,
       visible: true,
       locked: false,
-      zIndex: Date.now()
+      zIndex: Date.now(),
     })
   }
 
@@ -47,30 +49,38 @@ export default function ShapesSection({ searchTerm, onAddElement }: ShapesSectio
 
   return (
     <section>
-      {/* Section Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-          <Shapes className="w-4 h-4 text-blue-600" />
-        </div>
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Shapes</h3>
-          <p className="text-xs text-gray-500">{filteredShapes.length} items</p>
+          <span className="text-xs font-bold text-gray-900">Shapes</span>
+          <span className="ml-1.5 text-[10px] text-gray-400">{filteredShapes.length} items</span>
         </div>
+        {filteredShapes.length > 9 && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="flex items-center gap-0.5 text-[10px] text-blue-500 hover:text-blue-700 font-medium"
+          >
+            {showAll ? 'Show less' : 'See all'} <ChevronRight className="w-3 h-3" />
+          </button>
+        )}
       </div>
 
-      {/* Shapes Grid */}
-      <div className="grid grid-cols-3 gap-3">
-        {filteredShapes.map((shape, index) => (
-          <GraphicCard
+      {/* 3-column grid — dark thumbnails like Vistaprint */}
+      <div className="grid grid-cols-3 gap-2">
+        {visibleShapes.map(shape => (
+          <button
             key={shape.id}
             onClick={() => handleAddShape(shape)}
-            delay={index * 0.02}
+            title={shape.name}
+            className="aspect-square flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all duration-150 p-3 group"
           >
-            <div 
-              className="w-full h-full flex items-center justify-center text-gray-700"
+            {/* SVG rendered with black fill like Vistaprint */}
+            <div
+              className="w-full h-full flex items-center justify-center text-gray-900 group-hover:text-blue-600 transition-colors"
+              style={{ color: '#111827' }}
               dangerouslySetInnerHTML={{ __html: shape.svg }}
             />
-          </GraphicCard>
+          </button>
         ))}
       </div>
     </section>

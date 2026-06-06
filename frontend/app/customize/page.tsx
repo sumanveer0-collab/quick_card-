@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
-  Type, Image, Shapes, Palette, Layout, Droplet, MoreHorizontal,
-  ZoomIn, ZoomOut, Undo, Redo, Save, Download, FolderOpen, Package, Eye, ArrowRight
+  Type, Image, Shapes, Palette, Layout, Droplet,
+  ZoomIn, ZoomOut, Undo, Redo, Eye, ArrowRight
 } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import CustomizeSidebar from '@/components/customize/CustomizeSidebar'
@@ -19,7 +19,7 @@ import { templates } from '@/lib/templates'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
 
-type TabType = 'text' | 'uploads' | 'graphics' | 'background' | 'templates' | 'color' | 'product' | 'more'
+type TabType = 'text' | 'uploads' | 'graphics' | 'background' | 'templates' | 'color'
 
 export default function CustomizePage() {
   const router = useRouter()
@@ -27,7 +27,7 @@ export default function CustomizePage() {
   const designId = searchParams.get('designId')
   const templateId = searchParams.get('templateId')
   
-  const { zoom, setZoom, undo, redo, history, selectedId, elements, background, addElement, setBackground } = useEditorStore()
+  const { zoom, setZoom, undo, redo, history, selectedId, elements, background, addElement, setBackground, setTemplateHtml } = useEditorStore()
   const { calculateTotalPrice, selections } = useProductStore()
   const [activeTab, setActiveTab] = useState<TabType>('text')
   const [designName, setDesignName] = useState('Untitled Design')
@@ -88,28 +88,13 @@ export default function CustomizePage() {
           // Set background from template
           const bg = template.layoutConfig?.background || '#FFFFFF'
           setBackground(bg)
-          
-          // Load template elements
-          // Check if template has canvas JSON data
-          if (template.frontCanvasJson && Array.isArray(template.frontCanvasJson)) {
-            // Load pre-defined canvas elements
-            template.frontCanvasJson.forEach((element: any) => {
-              const { id, zIndex, ...elementData } = element
-              addElement(elementData)
-            })
-            toast.success(`Template "${template.name}" loaded!`)
-          } else {
-            // Convert HTML template to canvas elements
-            const { convertTemplateToCanvasElements } = await import('@/lib/template-to-canvas')
-            const elements = convertTemplateToCanvasElements(template, 'front')
-            
-            elements.forEach((element) => {
-              const { id, zIndex, ...elementData } = element
-              addElement(elementData as any)
-            })
-            
-            toast.success(`Template "${template.name}" loaded! Start customizing.`)
+
+          // ── NEW: store the raw HTML/CSS so CustomizeCanvas renders it as iframe ──
+          if (template.frontHTML) {
+            setTemplateHtml(template.frontHTML, template.frontCSS || '')
           }
+
+          toast.success(`Template "${template.name}" loaded! Start customizing.`)
         } else {
           toast.error('Failed to load template. Loading default template.')
           loadDefaultTemplate()
@@ -250,8 +235,6 @@ export default function CustomizePage() {
     { id: 'background' as TabType, icon: Palette, label: 'Background' },
     { id: 'templates' as TabType, icon: Layout, label: 'Templates' },
     { id: 'color' as TabType, icon: Droplet, label: 'Color' },
-    { id: 'product' as TabType, icon: Package, label: 'Product' },
-    { id: 'more' as TabType, icon: MoreHorizontal, label: 'More' },
   ]
 
   const canUndo = history.past.length > 0

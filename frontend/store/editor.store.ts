@@ -105,6 +105,11 @@ interface EditorState {
   
   // Background
   background: string
+
+  // Template HTML overlay (rendered as iframe behind canvas elements)
+  templateHtml: string
+  templateCss: string
+  setTemplateHtml: (html: string, css: string) => void
   
   // History
   history: EditorHistory
@@ -151,7 +156,7 @@ const initialHistory: EditorHistory = {
 
 export const useEditorStore = create<EditorState>((set, get) => ({
   elements: initialElements,
-  selectedId: null, // No default selection
+  selectedId: null,
   zoom: 100,
   showGrid: false,
   showBleed: true,
@@ -161,6 +166,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   gridSize: 10,
   currentFace: 'front',
   background: 'linear-gradient(135deg, #0369a1, #0891b2)',
+  templateHtml: '',
+  templateCss: '',
+  setTemplateHtml: (html, css) => set({ templateHtml: html, templateCss: css }),
   history: initialHistory,
 
   addElement: (element) => {
@@ -335,12 +343,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedId: null,
       zoom: 100,
       showGrid: false,
-  showBleed: false,
+      showBleed: false,
       showTrim: true,
       showSafety: true,
       snapToGrid: true,
       currentFace: 'front',
       background: 'linear-gradient(135deg, #0369a1, #0891b2)',
+      templateHtml: '',
+      templateCss: '',
       history: initialHistory,
     })
   },

@@ -61,18 +61,24 @@ export default function EditableGraphicElement({
       opacity: element.opacity || 1,
     }
 
-    switch (element.name) {
+    // Match by name (sidebar shapes) OR by shapeType (SidebarTools shapes)
+    const key = element.name || element.shapeType || ''
+
+    switch (key) {
       case 'Rectangle':
+      case 'Rounded Rect':
+      case 'rect':
         return (
           <Rect
             width={element.width}
             height={element.height}
-            cornerRadius={8}
+            cornerRadius={key === 'Rounded Rect' ? 18 : (element.cornerRadius || 0)}
             {...commonProps}
           />
         )
-      
+
       case 'Circle':
+      case 'circle':
         return (
           <Circle
             x={element.width / 2}
@@ -81,8 +87,9 @@ export default function EditableGraphicElement({
             {...commonProps}
           />
         )
-      
+
       case 'Triangle':
+      case 'triangle':
         return (
           <RegularPolygon
             x={element.width / 2}
@@ -93,8 +100,9 @@ export default function EditableGraphicElement({
             {...commonProps}
           />
         )
-      
+
       case 'Star':
+      case 'star':
         return (
           <Star
             x={element.width / 2}
@@ -105,7 +113,7 @@ export default function EditableGraphicElement({
             {...commonProps}
           />
         )
-      
+
       case 'Hexagon':
         return (
           <RegularPolygon
@@ -116,7 +124,7 @@ export default function EditableGraphicElement({
             {...commonProps}
           />
         )
-      
+
       case 'Diamond':
         return (
           <RegularPolygon
@@ -128,8 +136,32 @@ export default function EditableGraphicElement({
             {...commonProps}
           />
         )
-      
+
+      case 'Pentagon':
+        return (
+          <RegularPolygon
+            x={element.width / 2}
+            y={element.height / 2}
+            sides={5}
+            radius={Math.min(element.width, element.height) / 2}
+            rotation={-18}
+            {...commonProps}
+          />
+        )
+
+      case 'Octagon':
+        return (
+          <RegularPolygon
+            x={element.width / 2}
+            y={element.height / 2}
+            sides={8}
+            radius={Math.min(element.width, element.height) / 2}
+            {...commonProps}
+          />
+        )
+
       case 'Line':
+      case 'line':
         return (
           <Line
             points={[0, element.height / 2, element.width, element.height / 2]}
@@ -138,98 +170,43 @@ export default function EditableGraphicElement({
             lineCap="round"
           />
         )
-      
+
       case 'Arrow Right':
+      case 'arrow':
         return (
           <Group>
-            <Rect
-              x={0}
-              y={element.height * 0.3}
-              width={element.width * 0.7}
-              height={element.height * 0.4}
-              {...commonProps}
-            />
-            <RegularPolygon
-              x={element.width * 0.85}
-              y={element.height / 2}
-              sides={3}
-              radius={element.height * 0.3}
-              rotation={90}
-              {...commonProps}
-            />
+            <Rect x={0} y={element.height * 0.3} width={element.width * 0.7} height={element.height * 0.4} {...commonProps} />
+            <RegularPolygon x={element.width * 0.85} y={element.height / 2} sides={3} radius={element.height * 0.3} rotation={90} {...commonProps} />
           </Group>
         )
-      
+
       case 'Arrow Left':
         return (
           <Group>
-            <Rect
-              x={element.width * 0.3}
-              y={element.height * 0.3}
-              width={element.width * 0.7}
-              height={element.height * 0.4}
-              {...commonProps}
-            />
-            <RegularPolygon
-              x={element.width * 0.15}
-              y={element.height / 2}
-              sides={3}
-              radius={element.height * 0.3}
-              rotation={-90}
-              {...commonProps}
-            />
+            <Rect x={element.width * 0.3} y={element.height * 0.3} width={element.width * 0.7} height={element.height * 0.4} {...commonProps} />
+            <RegularPolygon x={element.width * 0.15} y={element.height / 2} sides={3} radius={element.height * 0.3} rotation={-90} {...commonProps} />
           </Group>
         )
-      
+
       case 'Arrow Up':
         return (
           <Group>
-            <Rect
-              x={element.width * 0.3}
-              y={element.height * 0.3}
-              width={element.width * 0.4}
-              height={element.height * 0.7}
-              {...commonProps}
-            />
-            <RegularPolygon
-              x={element.width / 2}
-              y={element.height * 0.15}
-              sides={3}
-              radius={element.width * 0.3}
-              rotation={0}
-              {...commonProps}
-            />
+            <Rect x={element.width * 0.3} y={element.height * 0.3} width={element.width * 0.4} height={element.height * 0.7} {...commonProps} />
+            <RegularPolygon x={element.width / 2} y={element.height * 0.15} sides={3} radius={element.width * 0.3} rotation={0} {...commonProps} />
           </Group>
         )
-      
+
       case 'Arrow Down':
         return (
           <Group>
-            <Rect
-              x={element.width * 0.3}
-              y={0}
-              width={element.width * 0.4}
-              height={element.height * 0.7}
-              {...commonProps}
-            />
-            <RegularPolygon
-              x={element.width / 2}
-              y={element.height * 0.85}
-              sides={3}
-              radius={element.width * 0.3}
-              rotation={180}
-              {...commonProps}
-            />
+            <Rect x={element.width * 0.3} y={0} width={element.width * 0.4} height={element.height * 0.7} {...commonProps} />
+            <RegularPolygon x={element.width / 2} y={element.height * 0.85} sides={3} radius={element.width * 0.3} rotation={180} {...commonProps} />
           </Group>
         )
-      
+
       default:
         return (
-          <Rect
-            width={element.width}
-            height={element.height}
-            {...commonProps}
-          />
+          <Rect width={element.width} height={element.height} cornerRadius={element.cornerRadius || 0} {...commonProps} />
         )
     }
   }

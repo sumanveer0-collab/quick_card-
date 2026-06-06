@@ -1,8 +1,4 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/customize/page": "app/customize/page.js",
-  "/templates/page": "app/templates/page.js",
-  "/business-cards/editor/[id]/page": "app/business-cards/editor/[id]/page.js",
-  "/card-editor/page": "app/card-editor/page.js",
-  "/business-cards/search/page": "app/business-cards/search/page.js"
+  "/product-options/page": "app/product-options/page.js"
 }
