@@ -1,101 +1,72 @@
-import { BusinessCardCatalogItem, CardLayoutStyle, CardPreviewStyle } from '@/types/business-card-catalog.types';
-import { businessCardTemplates } from './templates';
+import { BusinessCardCatalogItem } from '@/types/business-card-catalog.types';
+import { CARD_DESIGNS } from '@/components/business-cards/search/BusinessCardMiniPreview';
 
-const BASE_TEMPLATE_IDS = businessCardTemplates.map((t) => t.id);
-
-const INDUSTRIES = [
-  'corporate', 'minimal', 'luxury', 'creative', 'modern', 'tech',
-  'real-estate', 'restaurant', 'photography', 'medical', 'qr',
-];
-
-const TITLE_PREFIXES = [
-  'Sophisticated', 'Elegant', 'Modern', 'Bold', 'Vibrant', 'Luxury',
-  'Professional', 'Creative', 'Minimal', 'Premium', 'Classic', 'Contemporary',
-  'Regal', 'Whimsical', 'Digital', 'Organic', 'Floral', 'Urban', 'Vintage',
-  'Precision', 'Golden', 'Tropical', 'Memphis', 'Shield', 'Crimson',
-];
-
-const TITLE_SUFFIXES = [
-  'Realty Solutions', 'Brand Identity', 'Health Solutions', 'Spa Retreat',
-  'Cafe Delight', 'Barbershop', 'Investment Hub', 'Wellness Haven',
-  'Artistry Studio', 'Construction Experts', 'Dental Care', 'Fashion Studio',
-  'Fitness Training', 'Music Essentials', 'Retail Shop', 'Security Group',
-  'Camping Badge', 'Tree Farm', 'Hotel Elegance', 'Plumbing Solutions',
-  'Pizzeria Delight', 'Finance Solutions', 'Gamer Streamer', 'Culinary Tools',
-];
-
-const KEYWORD_POOL = [
-  'professional', 'modern', 'minimal', 'luxury', 'creative', 'elegant',
-  'corporate', 'simple', 'unique', 'premium', 'colorful', 'cool', '3d',
-  'bakery', 'barber', 'beauty', 'construction', 'lawyer', 'photography',
-  'real estate', 'restaurant', 'cleaning', 'electrician', 'landscaping',
-];
-
-const LAYOUTS: CardLayoutStyle[] = [
-  'classic', 'split-left', 'split-right', 'centered', 'wave', 'minimal', 'dark-luxury', 'gradient', 'bold',
-];
-
-const PREVIEW_PALETTES: CardPreviewStyle[] = [
-  { background: '#ffffff', accent: '#1e40af', textColor: '#0f172a', subtextColor: '#64748b', layout: 'split-left' },
-  { background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', accent: '#d4af37', textColor: '#fafafa', subtextColor: '#a8a29e', layout: 'dark-luxury' },
-  { background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)', accent: '#ffffff', textColor: '#ffffff', subtextColor: 'rgba(255,255,255,0.8)', layout: 'gradient' },
-  { background: '#fef3c7', accent: '#b45309', textColor: '#78350f', subtextColor: '#92400e', layout: 'classic' },
-  { background: '#ecfdf5', accent: '#059669', textColor: '#064e3b', subtextColor: '#047857', layout: 'minimal' },
-  { background: '#1e1b4b', accent: '#22d3ee', textColor: '#e0f2fe', subtextColor: '#67e8f9', layout: 'bold' },
-  { background: 'linear-gradient(160deg, #fce7f3 0%, #fdf2f8 100%)', accent: '#db2777', textColor: '#831843', subtextColor: '#9d174d', layout: 'wave' },
-  { background: '#f8fafc', accent: '#475569', textColor: '#0f172a', subtextColor: '#64748b', layout: 'centered' },
-  { background: 'linear-gradient(135deg, #134e4a 0%, #0d9488 100%)', accent: '#fbbf24', textColor: '#ffffff', subtextColor: '#ccfbf1', layout: 'split-right' },
-  { background: '#18181b', accent: '#f43f5e', textColor: '#fafafa', subtextColor: '#a1a1aa', layout: 'dark-luxury' },
-  { background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', accent: '#ffffff', textColor: '#ffffff', subtextColor: 'rgba(255,255,255,0.75)', layout: 'gradient' },
-  { background: '#fff7ed', accent: '#ea580c', textColor: '#7c2d12', subtextColor: '#c2410c', layout: 'classic' },
-];
-
-function slugify(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+export interface CatalogEntry extends BusinessCardCatalogItem {
+  designId: string; // matches CARD_DESIGNS[x].id
 }
 
-function buildCatalog(): BusinessCardCatalogItem[] {
-  const items: BusinessCardCatalogItem[] = [];
-  const count = 80;
+// ─── 25 Hardcoded visiting card designs ───────────────────────────────────────
+const RAW_CATALOG: Array<{
+  id: string;
+  title: string;
+  category: string;
+  designId: string;
+  isFree?: boolean;
+  isPopular?: boolean;
+  templateId: string;
+  keywords: string[];
+}> = [
+  { id: 'bc-001', title: 'Corporate Blue Professional',   category: 'corporate',    designId: 'corp-blue',        isFree: true,  isPopular: true,  templateId: 'corporate-blue-001',       keywords: ['corporate', 'blue', 'professional', 'minimal'] },
+  { id: 'bc-002', title: 'Luxury Black Gold',             category: 'luxury',       designId: 'luxury-gold',      isFree: false, isPopular: true,  templateId: 'luxury-black-gold-001',    keywords: ['luxury', 'black', 'gold', 'premium', 'elegant'] },
+  { id: 'bc-003', title: 'Creative Gradient Purple',      category: 'creative',     designId: 'creative-purple',  isFree: true,  isPopular: true,  templateId: 'modern-gradient-001',      keywords: ['creative', 'gradient', 'purple', 'modern'] },
+  { id: 'bc-004', title: 'Minimal White Elegant',         category: 'minimal',      designId: 'minimal-white',    isFree: true,  isPopular: true,  templateId: 'minimal-white-001',        keywords: ['minimal', 'white', 'elegant', 'clean', 'simple'] },
+  { id: 'bc-005', title: 'Tech Dark Cyan',                category: 'tech',         designId: 'tech-dark',        isFree: false, isPopular: true,  templateId: 'tech-startup-001',         keywords: ['tech', 'dark', 'cyan', 'startup', 'modern'] },
+  { id: 'bc-006', title: 'Real Estate Professional',      category: 'real-estate',  designId: 'real-estate',      isFree: true,  isPopular: false, templateId: 'real-estate-001',          keywords: ['real estate', 'green', 'professional', 'property'] },
+  { id: 'bc-007', title: 'Medical Clean Blue',            category: 'medical',      designId: 'medical-blue',     isFree: true,  isPopular: false, templateId: 'medical-001',              keywords: ['medical', 'doctor', 'healthcare', 'blue', 'clean'] },
+  { id: 'bc-008', title: 'Photography Studio Dark',       category: 'photography',  designId: 'photography',      isFree: false, isPopular: true,  templateId: 'photography-001',          keywords: ['photography', 'dark', 'studio', 'creative'] },
+  { id: 'bc-009', title: 'Restaurant Warm Orange',        category: 'restaurant',   designId: 'restaurant',       isFree: true,  isPopular: true,  templateId: 'restaurant-001',           keywords: ['restaurant', 'food', 'warm', 'orange', 'chef'] },
+  { id: 'bc-010', title: 'Corporate Navy Professional',   category: 'corporate',    designId: 'navy-split',       isFree: true,  isPopular: false, templateId: 'corporate-blue-001',       keywords: ['corporate', 'navy', 'professional', 'consultant'] },
+  { id: 'bc-011', title: 'Rose Pink Beauty Salon',        category: 'creative',     designId: 'rose-elegant',     isFree: true,  isPopular: false, templateId: 'modern-gradient-001',      keywords: ['beauty', 'pink', 'salon', 'spa', 'elegant'] },
+  { id: 'bc-012', title: 'Emerald Finance',               category: 'corporate',    designId: 'emerald',          isFree: false, isPopular: false, templateId: 'corporate-blue-001',       keywords: ['finance', 'green', 'investment', 'premium'] },
+  { id: 'bc-013', title: 'Bold Agency Orange',            category: 'creative',     designId: 'orange-bold',      isFree: true,  isPopular: true,  templateId: 'creative-designer-001',    keywords: ['bold', 'orange', 'agency', 'creative', 'modern'] },
+  { id: 'bc-014', title: 'Studio Noir Minimal',           category: 'minimal',      designId: 'ink-black',        isFree: false, isPopular: false, templateId: 'minimal-white-001',        keywords: ['minimal', 'black', 'dark', 'studio', 'elegant'] },
+  { id: 'bc-015', title: 'Architect Sky Blue',            category: 'corporate',    designId: 'sky-architect',    isFree: true,  isPopular: false, templateId: 'corporate-blue-001',       keywords: ['architect', 'blue', 'professional', 'clean'] },
+  { id: 'bc-016', title: 'Wave Digital Indigo',           category: 'tech',         designId: 'indigo-wave',      isFree: false, isPopular: true,  templateId: 'tech-startup-001',         keywords: ['digital', 'indigo', 'modern', 'tech', 'wave'] },
+  { id: 'bc-017', title: 'Teal Consulting',               category: 'corporate',    designId: 'teal-consult',     isFree: true,  isPopular: false, templateId: 'corporate-blue-001',       keywords: ['teal', 'consulting', 'professional', 'clean'] },
+  { id: 'bc-018', title: 'Spark Labs Startup Yellow',     category: 'tech',         designId: 'yellow-startup',   isFree: true,  isPopular: true,  templateId: 'tech-startup-001',         keywords: ['startup', 'yellow', 'bold', 'modern', 'creative'] },
+  { id: 'bc-019', title: 'Red Law Firm',                  category: 'corporate',    designId: 'red-lawyer',       isFree: false, isPopular: false, templateId: 'corporate-blue-001',       keywords: ['law', 'lawyer', 'red', 'professional', 'corporate'] },
+  { id: 'bc-020', title: 'Pastel Purple Fashion',         category: 'creative',     designId: 'pastel-minimal',   isFree: true,  isPopular: false, templateId: 'creative-designer-001',    keywords: ['fashion', 'purple', 'pastel', 'minimal', 'elegant'] },
+  { id: 'bc-021', title: 'Classic Black Border',          category: 'minimal',      designId: 'classic-border',   isFree: true,  isPopular: false, templateId: 'minimal-white-001',        keywords: ['classic', 'black', 'minimal', 'accountant', 'clean'] },
+  { id: 'bc-022', title: 'Sunset Events Gradient',        category: 'creative',     designId: 'sunset-gradient',  isFree: false, isPopular: true,  templateId: 'creative-designer-001',    keywords: ['events', 'gradient', 'orange', 'creative', 'warm'] },
+  { id: 'bc-023', title: 'Steel Industries Gray',         category: 'corporate',    designId: 'steel-gray',       isFree: true,  isPopular: false, templateId: 'corporate-blue-001',       keywords: ['industrial', 'gray', 'corporate', 'operations'] },
+  { id: 'bc-024', title: 'QR Code Modern',                category: 'tech',         designId: 'qr-modern',        isFree: false, isPopular: true,  templateId: 'qr-business-001',          keywords: ['qr', 'modern', 'digital', 'tech', 'connect'] },
+  { id: 'bc-025', title: 'Heritage Crafts Vintage',       category: 'creative',     designId: 'vintage-brown',    isFree: true,  isPopular: false, templateId: 'creative-designer-001',    keywords: ['vintage', 'brown', 'heritage', 'crafts', 'artisan'] },
+];
 
-  for (let i = 0; i < count; i++) {
-    const prefix = TITLE_PREFIXES[i % TITLE_PREFIXES.length];
-    const suffix = TITLE_SUFFIXES[Math.floor(i / TITLE_PREFIXES.length) % TITLE_SUFFIXES.length];
-    const title = `${prefix} ${suffix}`;
-    const category = INDUSTRIES[i % INDUSTRIES.length];
-    const templateId = BASE_TEMPLATE_IDS[i % BASE_TEMPLATE_IDS.length];
-    const preview = PREVIEW_PALETTES[i % PREVIEW_PALETTES.length];
-    const layout = LAYOUTS[i % LAYOUTS.length];
-
-    const kw = new Set<string>([category, preview.layout]);
-    KEYWORD_POOL.filter((_, idx) => (i + idx) % 5 === 0).forEach((k) => kw.add(k));
-    if (i % 4 === 0) kw.add('free');
-
-    items.push({
-      id: `bc-design-${String(i + 1).padStart(3, '0')}`,
-      title,
-      category,
-      keywords: Array.from(kw),
-      description: `${title} – ${category} business card template`,
-      isFree: i % 5 === 0 || i % 7 === 0,
-      isPopular: i < 12 || i % 11 === 0,
-      orientation: i % 9 === 0 ? 'square' : i % 7 === 0 ? 'vertical' : 'horizontal',
-      preview: { ...preview, layout },
-      templateId,
-    });
-  }
-
-  return items;
-}
-
-export const businessCardCatalog: BusinessCardCatalogItem[] = buildCatalog();
+export const businessCardCatalog: CatalogEntry[] = RAW_CATALOG.map((item) => ({
+  ...item,
+  description: `${item.title} – ${item.category} visiting card design`,
+  orientation: 'horizontal' as const,
+  preview: {
+    background: '#ffffff',
+    accent: '#3b82f6',
+    textColor: '#1f2937',
+    subtextColor: '#6b7280',
+    layout: 'classic' as const,
+  },
+}));
 
 export const catalogCategories = [
   { id: 'all', label: 'All Templates' },
-  ...Array.from(new Set(businessCardCatalog.map((d) => d.category))).map((c) => ({
-    id: c,
-    label: c.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-  })),
+  { id: 'corporate', label: 'Corporate' },
+  { id: 'minimal', label: 'Minimal' },
+  { id: 'luxury', label: 'Luxury' },
+  { id: 'creative', label: 'Creative' },
+  { id: 'tech', label: 'Tech' },
+  { id: 'real-estate', label: 'Real Estate' },
+  { id: 'restaurant', label: 'Restaurant' },
+  { id: 'photography', label: 'Photography' },
+  { id: 'medical', label: 'Medical' },
 ];
 
 export const popularKeywords = [
@@ -104,7 +75,7 @@ export const popularKeywords = [
 ];
 
 export function filterCatalog(
-  items: BusinessCardCatalogItem[],
+  items: CatalogEntry[],
   filters: {
     businessName?: string;
     keywords?: string;
@@ -112,7 +83,7 @@ export function filterCatalog(
     orientation?: string;
     onlyFree?: boolean;
   },
-): BusinessCardCatalogItem[] {
+): CatalogEntry[] {
   const q = (filters.keywords || '').toLowerCase().trim();
   const biz = (filters.businessName || '').toLowerCase().trim();
 
@@ -151,6 +122,6 @@ export function paginateCatalog<T>(items: T[], page: number, perPage: number) {
   };
 }
 
-export function getCatalogItemSlug(item: BusinessCardCatalogItem): string {
-  return slugify(item.title);
+export function getCatalogItemDesign(item: CatalogEntry) {
+  return CARD_DESIGNS.find((d) => d.id === item.designId);
 }

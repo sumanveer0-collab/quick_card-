@@ -15,7 +15,7 @@ import {
   paginateCatalog,
 } from '@/lib/business-cards/catalog';
 
-const PER_PAGE = 24;
+const PER_PAGE = 25;
 
 function BusinessCardSearchContent() {
   const router = useRouter();

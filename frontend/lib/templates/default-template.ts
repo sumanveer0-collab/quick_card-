@@ -6,7 +6,7 @@ const defaultTemplate: CanvasElement[] = [
   {
     id: 'default-company-name',
     type: 'text',
-    text: 'Your Company',
+    text: '',
     x: 100,
     y: 80,
     width: 600,
@@ -26,7 +26,7 @@ const defaultTemplate: CanvasElement[] = [
   {
     id: 'default-full-name',
     type: 'text',
-    text: 'Your Name',
+    text: '',
     x: 100,
     y: 180,
     width: 600,
@@ -46,7 +46,7 @@ const defaultTemplate: CanvasElement[] = [
   {
     id: 'default-job-title',
     type: 'text',
-    text: 'Job Title',
+    text: '',
     x: 100,
     y: 240,
     width: 600,
@@ -85,7 +85,7 @@ const defaultTemplate: CanvasElement[] = [
   {
     id: 'default-phone',
     type: 'text',
-    text: '📞 +1 (555) 123-4567',
+    text: '',
     x: 100,
     y: 340,
     width: 600,
@@ -105,7 +105,7 @@ const defaultTemplate: CanvasElement[] = [
   {
     id: 'default-email',
     type: 'text',
-    text: '✉️ your.email@company.com',
+    text: '',
     x: 100,
     y: 385,
     width: 600,
@@ -125,7 +125,7 @@ const defaultTemplate: CanvasElement[] = [
   {
     id: 'default-website',
     type: 'text',
-    text: '🌐 www.yourcompany.com',
+    text: '',
     x: 100,
     y: 430,
     width: 600,

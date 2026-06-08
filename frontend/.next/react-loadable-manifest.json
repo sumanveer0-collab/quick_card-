@@ -4,5 +4,11 @@
     "files": [
       "static/chunks/_app-pages-browser_lib_template-to-canvas_ts.js"
     ]
+  },
+  "app\\customize\\page.tsx -> html-to-image": {
+    "id": "app\\customize\\page.tsx -> html-to-image",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_html-to-image_es_index_js.js"
+    ]
   }
 }

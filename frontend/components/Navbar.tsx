@@ -1,10 +1,8 @@
 'use client'
 import Link from 'next/link'
-import { useAuthStore } from '@/store/auth.store'
-import { CreditCard, LogOut, User, Zap } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
 
 export default function Navbar() {
-  const { user, logout } = useAuthStore()
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
@@ -13,46 +11,6 @@ export default function Navbar() {
           <CreditCard className="w-6 h-6" />
           QuickCard
         </Link>
-
-        <div className="flex items-center gap-6">
-          {/* Navigation Links */}
-          <Link href="/business-cards/search" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-            Business Cards
-          </Link>
-          <Link href="/business-card-designs" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-            Browse Designs
-          </Link>
-          <Link href="/templates" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-            Templates
-          </Link>
-          {user ? (
-            <>
-              {user.plan === 'free' && (
-                <Link href="/upgrade" className="flex items-center gap-1.5 bg-gradient-to-r from-brand-600 to-purple-600 text-white text-sm font-semibold px-4 py-2 rounded-2xl hover:opacity-90 transition-opacity">
-                  <Zap className="w-4 h-4" />
-                  Upgrade Pro
-                </Link>
-              )}
-              {user.plan === 'pro' && (
-                <span className="bg-gradient-to-r from-brand-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">PRO</span>
-              )}
-              <Link href="/profile" className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center">
-                  <User className="w-4 h-4 text-brand-600" />
-                </div>
-                <span className="hidden sm:block font-medium">{user.name || 'Profile'}</span>
-              </Link>
-              <button onClick={logout} className="p-2 text-gray-400 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50">
-                <LogOut className="w-4 h-4" />
-              </button>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">Login</Link>
-              <Link href="/login" className="btn-primary text-sm py-2 px-4">Get Started</Link>
-            </>
-          )}
-        </div>
       </div>
     </nav>
   )

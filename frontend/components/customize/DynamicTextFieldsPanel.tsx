@@ -1,507 +1,268 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Type, Edit3, Trash2, Eye, EyeOff, Link, Unlink, Layers } from 'lucide-react'
+import { Plus, Type, Heading1, Heading2, AlignLeft, Hash } from 'lucide-react'
 import { useEditorStore } from '@/store/editor.store'
 
-// Text field definition with binding to canvas element
-interface TextFieldDefinition {
-  id: string
-  fieldKey: string // unique key like 'companyName', 'fullName'
-  label: string
-  placeholder: string
-  value: string
-  elementId: string | null // linked canvas element ID
-  defaultStyle: {
-    fontSize: number
-    fontFamily: string
-    fontWeight: string | number
-    color: string
-    align: 'left' | 'center' | 'right'
-  }
-}
-
-// Default business card fields
-const DEFAULT_FIELDS: Omit<TextFieldDefinition, 'elementId'>[] = [
+// ─── Quick-add text styles ────────────────────────────────────────────────────
+const QUICK_STYLES = [
   {
-    id: 'field_company',
-    fieldKey: 'companyName',
-    label: 'Company Name',
-    placeholder: 'Enter company name',
-    value: '',
-    defaultStyle: {
-      fontSize: 42,
-      fontFamily: 'Arial',
-      fontWeight: 700,
-      color: '#222222',
-      align: 'center'
-    }
+    id: 'heading',
+    label: 'Add a heading',
+    preview: 'Heading',
+    fontSize: 48,
+    fontWeight: 'bold',
+    fontFamily: 'Poppins',
+    fill: '#1a1a1a',
+    icon: Heading1,
   },
   {
-    id: 'field_fullname',
-    fieldKey: 'fullName',
-    label: 'Full Name',
-    placeholder: 'Enter your full name',
-    value: '',
-    defaultStyle: {
-      fontSize: 28,
-      fontFamily: 'Arial',
-      fontWeight: 600,
-      color: '#333333',
-      align: 'center'
-    }
+    id: 'subheading',
+    label: 'Add a subheading',
+    preview: 'Subheading',
+    fontSize: 28,
+    fontWeight: '600',
+    fontFamily: 'Inter',
+    fill: '#374151',
+    icon: Heading2,
   },
   {
-    id: 'field_jobtitle',
-    fieldKey: 'jobTitle',
-    label: 'Job Title',
-    placeholder: 'Enter your job title',
-    value: '',
-    defaultStyle: {
-      fontSize: 18,
-      fontFamily: 'Arial',
-      fontWeight: 'normal',
-      color: '#666666',
-      align: 'center'
-    }
+    id: 'body',
+    label: 'Add a little bit of body text',
+    preview: 'Body text',
+    fontSize: 18,
+    fontWeight: 'normal',
+    fontFamily: 'Inter',
+    fill: '#4b5563',
+    icon: AlignLeft,
   },
-  {
-    id: 'field_phone',
-    fieldKey: 'phone',
-    label: 'Phone',
-    placeholder: 'Enter phone number',
-    value: '',
-    defaultStyle: {
-      fontSize: 16,
-      fontFamily: 'Arial',
-      fontWeight: 'normal',
-      color: '#444444',
-      align: 'left'
-    }
-  },
-  {
-    id: 'field_email',
-    fieldKey: 'email',
-    label: 'Email',
-    placeholder: 'Enter email address',
-    value: '',
-    defaultStyle: {
-      fontSize: 16,
-      fontFamily: 'Arial',
-      fontWeight: 'normal',
-      color: '#444444',
-      align: 'left'
-    }
-  },
-  {
-    id: 'field_website',
-    fieldKey: 'website',
-    label: 'Website',
-    placeholder: 'Enter website',
-    value: '',
-    defaultStyle: {
-      fontSize: 16,
-      fontFamily: 'Arial',
-      fontWeight: 'normal',
-      color: '#444444',
-      align: 'left'
-    }
-  },
-  {
-    id: 'field_address',
-    fieldKey: 'address',
-    label: 'Address',
-    placeholder: 'Enter address',
-    value: '',
-    defaultStyle: {
-      fontSize: 14,
-      fontFamily: 'Arial',
-      fontWeight: 'normal',
-      color: '#666666',
-      align: 'left'
-    }
-  }
 ]
 
+// ─── Field definitions ────────────────────────────────────────────────────────
+const DEFAULT_FIELDS = [
+  { id: 'f_company',  label: 'Company Name', placeholder: 'Enter company name',   fontSize: 42, fontWeight: 700,        fill: '#222222', align: 'center' as const },
+  { id: 'f_name',     label: 'Full Name',     placeholder: 'Enter your full name', fontSize: 28, fontWeight: 600,        fill: '#333333', align: 'center' as const },
+  { id: 'f_title',    label: 'Job Title',     placeholder: 'Enter your job title', fontSize: 18, fontWeight: 'normal',   fill: '#666666', align: 'center' as const },
+  { id: 'f_phone',    label: 'Phone',         placeholder: 'Enter phone number',   fontSize: 16, fontWeight: 'normal',   fill: '#444444', align: 'left' as const },
+  { id: 'f_email',    label: 'Email',         placeholder: 'Enter email address',  fontSize: 16, fontWeight: 'normal',   fill: '#444444', align: 'left' as const },
+  { id: 'f_website',  label: 'Website',       placeholder: 'Enter website',        fontSize: 16, fontWeight: 'normal',   fill: '#444444', align: 'left' as const },
+  { id: 'f_address',  label: 'Address',       placeholder: 'Enter address',        fontSize: 14, fontWeight: 'normal',   fill: '#666666', align: 'left' as const },
+]
+
+interface Field {
+  id: string
+  label: string
+  placeholder: string
+  fontSize: number
+  fontWeight: number | string
+  fill: string
+  align: 'left' | 'center' | 'right'
+  value: string
+  elementId: string | null
+}
+
 export default function DynamicTextFieldsPanel() {
-  const { elements, addElement, updateElement, selectElement, deleteElement } = useEditorStore()
-  
-  // Initialize fields with null elementId
-  const [textFields, setTextFields] = useState<TextFieldDefinition[]>(
-    DEFAULT_FIELDS.map(field => ({ ...field, elementId: null }))
+  const { elements, addElement, updateElement, selectElement } = useEditorStore()
+
+  const [fields, setFields] = useState<Field[]>(
+    DEFAULT_FIELDS.map(f => ({ ...f, value: '', elementId: null }))
   )
 
-  // Sync canvas text changes back to fields
+  // Sync canvas → sidebar
   useEffect(() => {
-    const textElements = elements.filter(el => el.type === 'text')
-    
-    setTextFields(prev => prev.map(field => {
-      if (field.elementId) {
-        const element = textElements.find(el => el.id === field.elementId)
-        if (element && element.text !== field.value) {
-          // Canvas text changed, update field value
-          return { ...field, value: element.text || '' }
-        }
-      }
+    const textEls = elements.filter(el => el.type === 'text')
+    setFields(prev => prev.map(field => {
+      if (!field.elementId) return field
+      const el = textEls.find(e => e.id === field.elementId)
+      if (el && el.text !== field.value) return { ...field, value: el.text ?? '' }
       return field
     }))
   }, [elements])
 
-  // Handle field value change (sidebar input)
-  const handleFieldChange = (fieldId: string, newValue: string) => {
-    setTextFields(prev => 
-      prev.map(field => {
-        if (field.id === fieldId) {
-          // Update field value
-          const updated = { ...field, value: newValue }
-          
-          // If linked to canvas element, update it too
-          if (field.elementId) {
-            updateElement(field.elementId, { text: newValue })
-          }
-          
-          return updated
-        }
-        return field
-      })
-    )
+  // Sidebar → canvas
+  const handleChange = (fieldId: string, value: string) => {
+    setFields(prev => prev.map(f => {
+      if (f.id !== fieldId) return f
+      if (f.elementId) updateElement(f.elementId, { text: value })
+      return { ...f, value }
+    }))
   }
 
-  // Create canvas element from field
-  const handleCreateElement = (fieldId: string) => {
-    const field = textFields.find(f => f.id === fieldId)
+  const handleAdd = (fieldId: string) => {
+    const field = fields.find(f => f.id === fieldId)
     if (!field) return
-
-    // Calculate position based on existing elements
-    const textElements = elements.filter(el => el.type === 'text')
-    const yOffset = textElements.length * 80 + 100
-
-    const newElement = {
-      type: 'text' as const,
-      text: field.value,
-      x: 100,
-      y: yOffset,
+    const yCount = elements.filter(el => el.type === 'text').length
+    addElement({
+      type: 'text',
+      text: field.value || field.placeholder,
+      x: 112,
+      y: 150 + yCount * 75,
       width: 850,
-      height: field.defaultStyle.fontSize * 1.5,
-      fontSize: field.defaultStyle.fontSize,
-      fontFamily: field.defaultStyle.fontFamily,
-      fontWeight: field.defaultStyle.fontWeight,
-      fill: field.defaultStyle.color,
-      align: field.defaultStyle.align,
-      verticalAlign: 'middle' as const,
+      height: Math.round(field.fontSize * 1.6),
+      fontSize: field.fontSize,
+      fontFamily: 'Arial',
+      fontWeight: field.fontWeight,
+      fill: field.fill,
+      align: field.align,
+      verticalAlign: 'middle',
       letterSpacing: 0,
       lineHeight: 1.2,
       rotation: 0,
       visible: true,
       locked: false,
-      padding: { horizontal: 12, vertical: 8 },
-    }
-    
-    // Add element and get its ID
-    addElement(newElement)
-    
-    // Link field to the newly created element
-    // We need to get the ID of the just-added element
+    })
     setTimeout(() => {
-      const allElements = useEditorStore.getState().elements
-      const lastElement = allElements[allElements.length - 1]
-      if (lastElement) {
-        setTextFields(prev =>
-          prev.map(f =>
-            f.id === fieldId ? { ...f, elementId: lastElement.id } : f
-          )
-        )
+      const all = useEditorStore.getState().elements
+      const last = all[all.length - 1]
+      if (last) {
+        setFields(prev => prev.map(f => f.id === fieldId ? { ...f, elementId: last.id } : f))
       }
     }, 50)
   }
 
-  // Unlink field from canvas element
-  const handleUnlinkElement = (fieldId: string) => {
-    setTextFields(prev =>
-      prev.map(field =>
-        field.id === fieldId ? { ...field, elementId: null } : field
-      )
-    )
+  const handleAddQuick = (style: typeof QUICK_STYLES[number]) => {
+    const yCount = elements.filter(el => el.type === 'text').length
+    addElement({
+      type: 'text',
+      text: style.preview,
+      x: 112,
+      y: 150 + yCount * 75,
+      width: 850,
+      height: Math.round(style.fontSize * 1.6),
+      fontSize: style.fontSize,
+      fontFamily: style.fontFamily,
+      fontWeight: style.fontWeight,
+      fill: style.fill,
+      align: 'center',
+      verticalAlign: 'middle',
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      rotation: 0,
+      visible: true,
+      locked: false,
+    })
   }
 
-  // Delete field and its canvas element
-  const handleDeleteField = (fieldId: string) => {
-    const field = textFields.find(f => f.id === fieldId)
-    if (field?.elementId) {
-      deleteElement(field.elementId)
-    }
-    setTextFields(prev => prev.filter(f => f.id !== fieldId))
+  const handleAddCustom = () => {
+    const yCount = elements.filter(el => el.type === 'text').length
+    addElement({
+      type: 'text',
+      text: 'Custom Text',
+      x: 112,
+      y: 150 + yCount * 75,
+      width: 600,
+      height: 50,
+      fontSize: 24,
+      fontFamily: 'Inter',
+      fontWeight: 'normal',
+      fill: '#000000',
+      align: 'left',
+      verticalAlign: 'middle',
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      rotation: 0,
+      visible: true,
+      locked: false,
+    })
   }
-
-  // Add new custom field
-  const handleAddCustomField = () => {
-    const newField: TextFieldDefinition = {
-      id: `field_custom_${Date.now()}`,
-      fieldKey: `custom_${Date.now()}`,
-      label: 'Custom Text',
-      placeholder: 'Enter custom text',
-      value: 'Custom Text',
-      elementId: null,
-      defaultStyle: {
-        fontSize: 18,
-        fontFamily: 'Arial',
-        fontWeight: 'normal',
-        color: '#000000',
-        align: 'left'
-      }
-    }
-    
-    setTextFields(prev => [...prev, newField])
-  }
-
-  // Get text elements from canvas
-  const textElements = elements.filter(el => el.type === 'text')
-  const linkedElementIds = textFields.map(f => f.elementId).filter(Boolean)
-  const unlinkedElements = textElements.filter(el => !linkedElementIds.includes(el.id))
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
-          <Type className="w-5 h-5" />
-          Dynamic Text Fields
+    <div className="space-y-0">
+      {/* ── Quick-add styles (top section, BrandCrowd style) ── */}
+      <div className="px-5 pt-5 pb-4">
+        <h2 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
+          <Type className="w-4 h-4 text-blue-500" />Text
         </h2>
-        <p className="text-sm text-gray-500">
-          Edit text below and see it update on canvas instantly. Click + to add to canvas.
-        </p>
+        <p className="text-xs text-gray-500 mb-4">Click to add text to your design</p>
+
+        <div className="space-y-2">
+          {QUICK_STYLES.map(style => (
+            <button
+              key={style.id}
+              onClick={() => handleAddQuick(style)}
+              className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:bg-blue-50/40 transition-all group"
+            >
+              <span
+                className="block leading-tight truncate"
+                style={{
+                  fontSize: `${Math.min(style.fontSize / 2.5, 22)}px`,
+                  fontWeight: style.fontWeight,
+                  fontFamily: style.fontFamily,
+                  color: '#1a1a1a',
+                }}
+              >
+                {style.label}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={handleAddCustom}
+          className="mt-3 w-full py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-blue-600 border border-blue-300 rounded-xl hover:bg-blue-50 transition-colors"
+        >
+          <Plus className="w-4 h-4" />Add Custom Text
+        </button>
       </div>
 
-      {/* Text Fields */}
-      <div className="space-y-3">
+      {/* ── Divider ── */}
+      <div className="h-2 bg-gray-50 border-y border-gray-100" />
+
+      {/* ── Dynamic Fields ── */}
+      <div className="px-5 pt-4 pb-6 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Hash className="w-3.5 h-3.5 text-gray-400" />
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Business Card Fields</span>
+        </div>
+        <p className="text-xs text-gray-400 -mt-1">Edit field values then click + to add to canvas</p>
+
         <AnimatePresence>
-          {textFields.map((field, index) => {
+          {fields.map((field, i) => {
             const isLinked = !!field.elementId
-            const element = isLinked ? elements.find(el => el.id === field.elementId) : null
-            
             return (
               <motion.div
                 key={field.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ delay: index * 0.05 }}
-                className="group relative"
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ delay: i * 0.03 }}
               >
-                {/* Field Label */}
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-                    {field.label}
-                    {isLinked && (
-                      <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                        <Link className="w-3 h-3" />
-                        Linked
-                      </span>
-                    )}
-                  </label>
-                  
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {isLinked && (
-                      <>
-                        <button
-                          onClick={() => selectElement(field.elementId!)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                          title="Select on canvas"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleUnlinkElement(field.id)}
-                          className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                          title="Unlink from canvas"
-                        >
-                          <Unlink className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                    <button
-                      onClick={() => handleDeleteField(field.id)}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      title="Delete field"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Input Field */}
-                <div className="relative">
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  {field.label}
+                  {isLinked && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full font-normal">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse inline-block" />
+                      Live
+                    </span>
+                  )}
+                </label>
+                <div className="flex items-center gap-1.5">
                   <input
                     type="text"
                     value={field.value}
-                    onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                    onChange={e => handleChange(field.id, e.target.value)}
                     placeholder={field.placeholder}
-                    className={`w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                    onClick={() => field.elementId && selectElement(field.elementId)}
+                    className={`flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 transition-all ${
                       isLinked
-                        ? 'border-green-300 focus:ring-green-500 focus:border-green-500 bg-green-50/30'
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                        ? 'border-green-300 focus:ring-green-400 bg-green-50/30'
+                        : 'border-gray-200 focus:ring-blue-400'
                     }`}
-                    style={{
-                      fontSize: `${Math.min(field.defaultStyle.fontSize / 2, 14)}px`,
-                      fontWeight: field.defaultStyle.fontWeight,
-                    }}
                   />
-                  
-                  {/* Add to Canvas Button */}
                   {!isLinked && (
                     <button
-                      onClick={() => handleCreateElement(field.id)}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:scale-110"
+                      onClick={() => handleAdd(field.id)}
                       title="Add to canvas"
+                      className="w-8 h-8 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex-shrink-0"
                     >
-                      <Plus className="w-5 h-5" />
+                      <Plus className="w-4 h-4" />
                     </button>
                   )}
-                  
-                  {/* Linked Indicator */}
-                  {isLinked && element && (
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    </div>
-                  )}
                 </div>
-                
-                {/* Element Info */}
-                {isLinked && element && (
-                  <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Layers className="w-3 h-3" />
-                      {element.fontSize}px • {element.fontFamily}
-                    </span>
-                    {!element.visible && (
-                      <span className="flex items-center gap-1 text-orange-600">
-                        <EyeOff className="w-3 h-3" />
-                        Hidden
-                      </span>
-                    )}
-                  </div>
-                )}
               </motion.div>
             )
           })}
         </AnimatePresence>
-      </div>
-
-      {/* Add Custom Field Button */}
-      <button
-        onClick={handleAddCustomField}
-        className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
-      >
-        <Plus className="w-5 h-5" />
-        Add Custom Text Field
-      </button>
-
-      {/* Unlinked Canvas Elements */}
-      {unlinkedElements.length > 0 && (
-        <div className="pt-4 border-t border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <Layers className="w-4 h-4" />
-            Unlinked Canvas Elements ({unlinkedElements.length})
-          </h3>
-          <div className="space-y-2">
-            {unlinkedElements.map((element) => (
-              <button
-                key={element.id}
-                onClick={() => selectElement(element.id)}
-                className="w-full p-3 text-left border border-orange-200 bg-orange-50/30 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {element.text || 'Empty text'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {element.fontSize}px • {element.fontFamily}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">
-                      Not linked
-                    </span>
-                    <Edit3 className="w-4 h-4 text-gray-400 group-hover:text-orange-600" />
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            These elements exist on canvas but aren't linked to any field. You can still edit them directly on canvas.
-          </p>
-        </div>
-      )}
-
-      {/* Quick Text Styles */}
-      <div className="pt-4 border-t border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Add Text Styles</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: 'Heading', size: 36, weight: 'bold', sample: 'Heading' },
-            { label: 'Subheading', size: 24, weight: '600', sample: 'Subheading' },
-            { label: 'Body', size: 16, weight: 'normal', sample: 'Body Text' },
-            { label: 'Small', size: 12, weight: 'normal', sample: 'Small Text' },
-          ].map((preset) => (
-            <button
-              key={preset.label}
-              onClick={() => {
-                const yOffset = elements.filter(el => el.type === 'text').length * 80 + 100
-                addElement({
-                  type: 'text',
-                  text: preset.sample,
-                  x: 100,
-                  y: yOffset,
-                  width: 400,
-                  height: preset.size * 1.5,
-                  fontSize: preset.size,
-                  fontFamily: 'Arial',
-                  fontWeight: preset.weight,
-                  fill: '#000000',
-                  align: 'left',
-                  verticalAlign: 'middle',
-                  letterSpacing: 0,
-                  lineHeight: 1.2,
-                  rotation: 0,
-                  visible: true,
-                  locked: false,
-                  padding: { horizontal: 12, vertical: 8 },
-                })
-              }}
-              className="p-3 text-left border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-gray-900">{preset.label}</p>
-                  <p className="text-xs text-gray-500">{preset.size}px</p>
-                </div>
-                <Plus className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="pt-4 border-t border-gray-200">
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <p className="text-2xl font-bold text-blue-600">{textFields.length}</p>
-            <p className="text-xs text-gray-600">Fields</p>
-          </div>
-          <div className="p-3 bg-green-50 rounded-lg">
-            <p className="text-2xl font-bold text-green-600">
-              {textFields.filter(f => f.elementId).length}
-            </p>
-            <p className="text-xs text-gray-600">Linked</p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-2xl font-bold text-gray-600">{textElements.length}</p>
-            <p className="text-xs text-gray-600">Canvas</p>
-          </div>
-        </div>
       </div>
     </div>
   )

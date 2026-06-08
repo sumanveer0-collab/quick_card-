@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Search, X, Check, Crown, Loader2 } from 'lucide-react'
 import { replacePlaceholders } from '@/lib/template-engine'
+import { templates as localTemplates } from '@/lib/templates'
 
 const ALL_CAT = 'All'
 
@@ -15,6 +16,19 @@ interface ApiTemplate {
   frontCSS?: string
   backHTML?: string
   backCSS?: string
+}
+
+// Convert local static templates → ApiTemplate shape so the same UI works
+function localToApiTemplate(t: (typeof localTemplates)[number]): ApiTemplate {
+  return {
+    _id: t.id,
+    name: t.name,
+    category: t.category,
+    isPremium: false,
+    layoutConfig: { background: t.background },
+    frontHTML: '',
+    frontCSS: '',
+  }
 }
 
 // ── Mini iframe thumbnail ────────────────────────────────────────────────────
@@ -48,13 +62,17 @@ ${css}
 
 function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: ApiTemplate; selected: boolean; onClick: () => void }) {
   const ref = useRef<HTMLIFrameElement>(null)
+  const hasHtml = !!(tmpl.frontHTML)
 
   useEffect(() => {
+    if (!hasHtml) return
     const el = ref.current
     if (!el) return
     const doc = el.contentDocument
     if (doc) { doc.open(); doc.write(buildDoc(tmpl)); doc.close() }
   }, [tmpl._id])
+
+  const bg = tmpl.layoutConfig?.background || '#ffffff'
 
   return (
     <button
@@ -67,21 +85,30 @@ function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: ApiTemplate; sel
       style={{ aspectRatio: '1.75' }}
       title={tmpl.name}
     >
-      {/* iframe preview */}
-      <div className="absolute inset-0 pointer-events-none">
-        <iframe
-          ref={ref}
-          title={tmpl.name}
-          sandbox="allow-same-origin"
-          style={{
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            display: 'block',
-            pointerEvents: 'none',
-          }}
-        />
-      </div>
+      {hasHtml ? (
+        /* iframe preview for API templates */
+        <div className="absolute inset-0 pointer-events-none">
+          <iframe
+            ref={ref}
+            title={tmpl.name}
+            sandbox="allow-same-origin"
+            style={{ width: '100%', height: '100%', border: 'none', display: 'block', pointerEvents: 'none' }}
+          />
+        </div>
+      ) : (
+        /* Solid colour preview for local templates */
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ background: bg }}
+        >
+          <span
+            className="text-[10px] font-bold px-2 text-center leading-tight"
+            style={{ color: bg === '#ffffff' || bg === '#FFFFFF' ? '#374151' : '#ffffff', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
+          >
+            {tmpl.name}
+          </span>
+        </div>
+      )}
 
       {/* Selected checkmark */}
       {selected && (
@@ -130,10 +157,16 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
       .then(json => {
         const raw = json.data
         const list: ApiTemplate[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : []
-        if (list.length > 0) setApiTemplates(list)
+        if (list.length > 0) {
+          setApiTemplates(list)
+        } else {
+          // API returned empty — use local templates
+          setApiTemplates(localTemplates.map(localToApiTemplate))
+        }
       })
       .catch(() => {
-        // API down — stay with empty list, show message
+        // API down — fall back to local static templates so the panel is never empty
+        setApiTemplates(localTemplates.map(localToApiTemplate))
       })
       .finally(() => setLoading(false))
   }, [])
@@ -165,11 +198,16 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
     setSelectedId(tmpl._id)
     setApplying(true)
     try {
+      // For local templates (no frontHTML), just call onLoad directly
+      if (!tmpl.frontHTML) {
+        onLoad(tmpl._id)
+        return
+      }
+      // For API templates, try to fetch full data
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
       const res = await fetch(`${apiUrl}/templates/${tmpl._id}`)
       const json = await res.json()
       const full = json.data || json
-      // store full template in sessionStorage then call parent
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('qc_selected_template_full', JSON.stringify(full))
       }
@@ -234,36 +272,92 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
       {/* Grid / Categories view */}
       <div className="flex-1 overflow-y-auto px-3 py-3" style={{ scrollbarWidth: 'thin' }}>
 
-        {/* ── CATEGORIES view — dark button grid like BrandCrowd ── */}
+        {/* ── CATEGORIES view — category pills + filtered results below ── */}
         {viewMode === 'categories' && (
-          <div>
-            <p className="text-[10px] text-gray-400 mb-3">Select a category to browse</p>
+          <div className="space-y-3">
+            <p className="text-[10px] text-gray-400">Select a category to browse</p>
+
+            {/* Category buttons grid */}
             <div className="grid grid-cols-2 gap-2">
               {categories.slice(1).map(cat => (
                 <button
                   key={cat}
-                  onClick={() => { setActiveCategory(cat); setViewMode('all') }}
-                  className={`py-3 px-3 rounded-lg text-[11px] font-bold capitalize text-left transition-all ${
+                  onClick={() => setActiveCategory(activeCategory === cat ? ALL_CAT : cat)}
+                  className={`py-2.5 px-3 rounded-lg text-[11px] font-bold capitalize text-left transition-all ${
                     activeCategory === cat
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-800 text-white hover:bg-gray-700'
                   }`}
                 >
                   {cat}
                 </button>
               ))}
-              {/* "All Templates" button */}
+              {/* All Templates button */}
               <button
-                onClick={() => { setActiveCategory(ALL_CAT); setViewMode('all') }}
-                className="py-3 px-3 rounded-lg text-[11px] font-bold text-left bg-blue-700 text-white hover:bg-blue-600 transition-all col-span-2"
+                onClick={() => setActiveCategory(ALL_CAT)}
+                className={`py-2.5 px-3 rounded-lg text-[11px] font-bold text-left transition-all col-span-2 ${
+                  activeCategory === ALL_CAT
+                    ? 'bg-blue-700 text-white ring-2 ring-blue-300'
+                    : 'bg-blue-700 text-white hover:bg-blue-600'
+                }`}
               >
                 ✦ All Templates ({apiTemplates.length})
               </button>
             </div>
+
+            {/* Filtered template results shown below category buttons */}
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-xs text-gray-400">No templates in this category</p>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-1">
+                {/* Category header */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-gray-600 capitalize">
+                    {activeCategory === ALL_CAT ? 'All Templates' : activeCategory}
+                  </span>
+                  <span className="text-[10px] text-gray-400">{filtered.length} templates</span>
+                </div>
+
+                {visible.map(tmpl => (
+                  <div key={tmpl._id} className="space-y-1">
+                    <TemplateThumbnail
+                      tmpl={tmpl}
+                      selected={selectedId === tmpl._id}
+                      onClick={() => handleApply(tmpl)}
+                    />
+                    <div className="flex items-center justify-between px-0.5">
+                      <span className="text-[10px] text-gray-500 truncate capitalize">{tmpl.name}</span>
+                      <button
+                        onClick={() => handleApply(tmpl)}
+                        disabled={applying && selectedId === tmpl._id}
+                        className="text-[10px] text-blue-500 hover:text-blue-700 font-semibold shrink-0"
+                      >
+                        {applying && selectedId === tmpl._id ? 'Applying...' : 'Use →'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {hasMore && (
+                  <button
+                    onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                    className="w-full py-2 mt-1 border border-gray-300 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    Load more
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* ── ALL view — template thumbnails ── */}
+        {/* ── ALL view — all template thumbnails ── */}
         {viewMode === 'all' && (
           <>
             {loading ? (
@@ -272,21 +366,11 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-12 px-4">
-                {apiTemplates.length === 0 ? (
-                  <>
-                    <div className="text-3xl mb-3">🔌</div>
-                    <p className="text-xs font-semibold text-gray-600 mb-1">Server not connected</p>
-                    <p className="text-[11px] text-gray-400">Start the backend to load templates</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-xs text-gray-400">No templates in "{activeCategory}"</p>
-                    <button onClick={() => setActiveCategory(ALL_CAT)}
-                      className="mt-2 text-[11px] text-blue-500 hover:text-blue-700 font-medium">
-                      Show all templates
-                    </button>
-                  </>
-                )}
+                <p className="text-xs text-gray-400">No templates found for "{activeCategory}"</p>
+                <button onClick={() => { setActiveCategory(ALL_CAT); setSearch('') }}
+                  className="mt-2 text-[11px] text-blue-500 hover:text-blue-700 font-medium">
+                  Show all templates
+                </button>
               </div>
             ) : (
               <div className="space-y-2">

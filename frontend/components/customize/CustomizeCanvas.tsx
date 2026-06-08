@@ -498,9 +498,9 @@ export default function CustomizeCanvas() {
                 y={BLEED_PX}
                 width={CARD_WIDTH_PX}
                 height={CARD_HEIGHT_PX}
-                stroke="#9ca3af"
-                strokeWidth={2}
-                dash={[8, 4]}
+                stroke="rgba(255,255,255,0.4)"
+                strokeWidth={1}
+                dash={[6, 4]}
                 listening={false}
               />
 
@@ -511,9 +511,9 @@ export default function CustomizeCanvas() {
                   y={SAFE_AREA_Y}
                   width={SAFE_AREA_WIDTH}
                   height={SAFE_AREA_HEIGHT}
-                  stroke="#111312ff"
-                  strokeWidth={2}
-                  dash={[8, 4]}
+                  stroke="rgba(255,255,255,0.3)"
+                  strokeWidth={1}
+                  dash={[6, 4]}
                   listening={false}
                 />
               )}

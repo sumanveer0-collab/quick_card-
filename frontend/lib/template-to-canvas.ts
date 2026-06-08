@@ -26,7 +26,7 @@ export function convertTemplateToCanvasElements(
   elements.push({
     id: `el_business_name_${Date.now()}`,
     type: 'text',
-    text: 'Your Business Name',
+    text: '',
     x: centerX - 200,
     y: baseY,
     width: 400,
@@ -47,7 +47,7 @@ export function convertTemplateToCanvasElements(
   elements.push({
     id: `el_tagline_${Date.now() + 1}`,
     type: 'text',
-    text: 'Your Tagline Here',
+    text: '',
     x: centerX - 200,
     y: baseY + 70,
     width: 400,
@@ -67,16 +67,16 @@ export function convertTemplateToCanvasElements(
   // Add contact info section
   const contactY = baseY + 150
   const contactItems = [
-    { icon: '📞', text: '+91 98765 43210', id: 'phone' },
-    { icon: '✉️', text: 'you@example.com', id: 'email' },
-    { icon: '🌐', text: 'www.yoursite.com', id: 'website' },
+    { icon: '📞', text: '', id: 'phone' },
+    { icon: '✉️', text: '', id: 'email' },
+    { icon: '🌐', text: '', id: 'website' },
   ]
   
   contactItems.forEach((item, index) => {
     elements.push({
       id: `el_${item.id}_${Date.now() + 3 + index}`,
       type: 'text',
-      text: `${item.icon} ${item.text}`,
+      text: '',
       x: centerX - 150,
       y: contactY + (index * 35),
       width: 300,
@@ -218,7 +218,7 @@ export function createDefaultCanvasElements(): CanvasElement[] {
     {
       id: `el_default_business_${Date.now()}`,
       type: 'text',
-      text: 'Your Company',
+      text: '',
       x: centerX - 200,
       y: 150,
       width: 400,
@@ -237,7 +237,7 @@ export function createDefaultCanvasElements(): CanvasElement[] {
     {
       id: `el_default_name_${Date.now() + 1}`,
       type: 'text',
-      text: 'Your Name',
+      text: '',
       x: centerX - 150,
       y: 250,
       width: 300,
@@ -256,7 +256,7 @@ export function createDefaultCanvasElements(): CanvasElement[] {
     {
       id: `el_default_title_${Date.now() + 2}`,
       type: 'text',
-      text: 'Job Title',
+      text: '',
       x: centerX - 150,
       y: 300,
       width: 300,
@@ -275,7 +275,7 @@ export function createDefaultCanvasElements(): CanvasElement[] {
     {
       id: `el_default_phone_${Date.now() + 3}`,
       type: 'text',
-      text: '📞 +91 98765 43210',
+      text: '',
       x: centerX - 150,
       y: 380,
       width: 300,
@@ -294,7 +294,7 @@ export function createDefaultCanvasElements(): CanvasElement[] {
     {
       id: `el_default_email_${Date.now() + 4}`,
       type: 'text',
-      text: '✉️ you@example.com',
+      text: '',
       x: centerX - 150,
       y: 415,
       width: 300,
@@ -313,7 +313,7 @@ export function createDefaultCanvasElements(): CanvasElement[] {
     {
       id: `el_default_website_${Date.now() + 5}`,
       type: 'text',
-      text: '🌐 www.yoursite.com',
+      text: '',
       x: centerX - 150,
       y: 450,
       width: 300,
