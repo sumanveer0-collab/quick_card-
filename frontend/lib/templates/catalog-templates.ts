@@ -28,7 +28,12 @@ const sx = (v: number) => v * SCALE + BLEED
 const sy = (v: number) => v * SCALE + BLEED
 const sw = (v: number) => v * SCALE
 const sh = (v: number) => v * SCALE
-const sf = (v: number) => Math.round(v * SCALE * 0.72) // font scale (slightly smaller for readability)
+
+// Font scale: SVG sizes are in "SVG px" for a 350-wide card.
+// At print resolution (1050px wide), we multiply by 3 then apply a
+// typographic correction factor so text looks proportional on canvas.
+// BrandCrowd-style: headline ~48–72px canvas, contact ~18–24px canvas.
+const sf = (v: number) => Math.round(v * SCALE * 0.9)
 
 let _idCounter = 0
 const uid = (prefix: string) => `cat_${prefix}_${++_idCounter}_${Math.random().toString(36).slice(2, 7)}`
@@ -105,31 +110,44 @@ function convertElement(el: CardElement, zIndex: number): CanvasElement | Canvas
       const rawX = el.x * SCALE + BLEED
       const rawY = el.y * SCALE + BLEED
       const fSize = sf(el.size)
-      // Estimate width: characters * fontSize * 0.6
-      const estimatedWidth = Math.min(
-        Math.max(el.text.length * fSize * 0.62, fSize * 4),
-        sw(320)          // max 320 svg units wide
-      )
-      const height = Math.round(fSize * 1.6)
 
-      let x = rawX
-      if (el.align === 'center') x = rawX - estimatedWidth / 2
-      if (el.align === 'right')  x = rawX - estimatedWidth
+      // Use full card width so text never wraps prematurely.
+      // The text element itself clips to its width via Konva's wrap="none".
+      const fullCardWidth = sw(350)  // full 1050px card width
+      const height = Math.round(fSize * 2.2)  // enough for one line + padding
+
+      // X: for center/right-anchored text, offset from the anchor point
+      let x: number
+      if (el.align === 'center') {
+        // anchor is at rawX, element goes from rawX - fullCardWidth/2
+        x = rawX - fullCardWidth / 2
+      } else if (el.align === 'right') {
+        x = rawX - fullCardWidth
+      } else {
+        x = rawX
+      }
+
+      // Keep within canvas bounds (bleed area)
+      x = Math.max(BLEED, Math.min(x, BLEED + sw(350) - 80))
+
+      // Y: rawY in SVG is the text baseline. Konva y is top of bounding box.
+      // Subtract ~75% of line height to approximate baseline-to-top conversion.
+      const y = Math.max(BLEED, rawY - fSize * 0.85)
 
       return {
         id: uid('text'),
         type: 'text',
         text: el.text,
-        x: Math.max(BLEED, x),
-        y: Math.max(BLEED, rawY - height / 2),   // centre text vertically on the y coordinate
-        width: estimatedWidth,
+        x,
+        y,
+        width: fullCardWidth,
         height,
         fontSize: fSize,
         fontFamily: 'Inter',
         fontWeight: el.weight === 'bold' ? 'bold' : 'normal',
         fill: el.fill,
         align: el.align ?? 'left',
-        letterSpacing: el.spacing ? el.spacing * 0.5 : 0,
+        letterSpacing: el.spacing ? el.spacing * 0.4 : 0,
         lineHeight: 1.2,
         rotation: 0,
         opacity: el.opacity ?? 1,

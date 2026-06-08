@@ -112,40 +112,9 @@ export default function CanvaStyleTextElement({
     }
   }, [isSelected])
 
-  // 🔥 SMART AUTO-RESIZE: Canva-style behavior
-  useEffect(() => {
-    if (textRef.current && element.text && !isResizing) {
-      requestAnimationFrame(() => {
-        // Get actual text dimensions from Konva
-        const actualTextHeight = textRef.current?.height() || 0
-        
-        // Calculate required dimensions
-        const dimensions = calculateTextDimensions(
-          element.text,
-          element.fontSize || 16,
-          element.width,
-          element.lineHeight || 1.2,
-          element.fontFamily || 'Inter',
-          element.fontWeight || 'normal'
-        )
-        
-        // Determine if we need to resize
-        const requiredHeight = Math.max(
-          actualTextHeight + (TEXT_PADDING.vertical * 2),
-          dimensions.height
-        )
-        
-        const needsHeightResize = requiredHeight > element.height
-        
-        // Auto-expand container if text would be clipped
-        if (needsHeightResize) {
-          onTransformEnd({
-            height: requiredHeight,
-          })
-        }
-      })
-    }
-  }, [element.text, element.fontSize, element.fontFamily, element.fontWeight, element.width, element.lineHeight, isResizing])
+  // Auto-resize disabled — template text uses wrap="none" with fixed height
+  // to prevent cascading height updates on initial render.
+  // Users can manually resize by dragging the transformer handles.
 
   // Calculate text dimensions with padding
   const textWidth = element.width - (TEXT_PADDING.horizontal * 2)
@@ -242,6 +211,16 @@ export default function CanvaStyleTextElement({
           />
         )} */}
 
+        {/* Transparent hit area so the Group receives clicks even when Text has listening=false */}
+        <Rect
+          x={0}
+          y={0}
+          width={element.width}
+          height={element.height}
+          fill="transparent"
+          listening={true}
+        />
+
         {/* Actual text with padding - NO CLIPPING */}
         <Text
           ref={textRef}
@@ -251,7 +230,10 @@ export default function CanvaStyleTextElement({
           text={element.text || ''}
           fontSize={element.fontSize || 16}
           fontFamily={element.fontFamily || 'Inter'}
-          fontStyle={element.fontWeight || 'normal'}
+          fontStyle={[
+            element.fontStyle === 'italic' ? 'italic' : '',
+            element.fontWeight === 'bold' || element.fontWeight === 700 || element.fontWeight === '700' ? 'bold' : '',
+          ].filter(Boolean).join(' ') || 'normal'}
           fill={element.fill || '#000000'}
           stroke={element.stroke || undefined}
           strokeWidth={element.strokeWidth || 0}
@@ -259,8 +241,8 @@ export default function CanvaStyleTextElement({
           verticalAlign="middle"
           letterSpacing={element.letterSpacing || 0}
           lineHeight={element.lineHeight || 1.2}
-          wrap="word"
-          ellipsis={false}
+          wrap="none"
+          ellipsis={true}
           opacity={isEditing ? 0.3 : 1}
           listening={false}
         />

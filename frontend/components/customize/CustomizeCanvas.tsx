@@ -125,9 +125,9 @@ export default function CustomizeCanvas() {
   const [showImageEditor, setShowImageEditor] = useState(false)
   const useCanvaStyle = true // Always use Canva style (floating toolbar)
   const useVistaprintEditor = false // Use Vistaprint-style editor
-  const useAdvancedEditor = false // Use Advanced text editor - disabled in favor of CanvasTextEditor
-  const useCanvasTextEditor = false // Use new Canvas Text Editor - disabled in favor of Vistaprint
-  const useVistaprintFloatingToolbar = true // Use Vistaprint Floating Toolbar (NEW)
+  const useAdvancedEditor = false // Use Advanced text editor - disabled
+  const useCanvasTextEditor = false // Use new Canvas Text Editor - disabled
+  const useVistaprintFloatingToolbar = false // Disabled — TextEditPanel on right side handles editing
 
   useEffect(() => {
     // Calculate scale based on available viewport space
@@ -665,15 +665,7 @@ export default function CustomizeCanvas() {
           )}
         </div>
 
-        {/* Canva-style Toolbar (above selected element) */}
-        {selectedId && useCanvaStyle && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !vistaprintToolbarId && (
-          <CanvaStyleToolbar />
-        )}
-
-        {/* Canva-style Quick Actions (below selected element) */}
-        {selectedId && useCanvaStyle && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !vistaprintToolbarId && (
-          <CanvaQuickActions />
-        )}
+        {/* Canva-style Toolbar + Quick Actions removed — TextEditPanel on right side handles all text editing */}
 
         {/* Image Editor Toolbar */}
         {showImageEditor && selectedId && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !vistaprintToolbarId && (

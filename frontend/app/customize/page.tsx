@@ -2,7 +2,7 @@
 import { Suspense } from 'react'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Type, Image, Shapes, Palette, Layout, Droplet,
   ZoomIn, ZoomOut, Undo, Redo, Eye, Loader2,
@@ -393,22 +393,24 @@ function CustomizeEditor() {
           })}
         </div>
 
-        {/* Sidebar — shows TextEditPanel when text selected, otherwise normal sidebar */}
-        {textEditId ? (
-          <TextEditPanel
-            elementId={textEditId}
-            onClose={() => {
-              setTextEditId(null)
-              useEditorStore.getState().selectElement(null)
-            }}
-          />
-        ) : (
-          <CustomizeSidebar activeTab={activeTab} />
-        )}
+        {/* Sidebar — shows TextEditPanel on left when text selected, otherwise normal sidebar */}
+        <AnimatePresence mode="wait">
+          {textEditId ? (
+            <TextEditPanel
+              key={textEditId}
+              elementId={textEditId}
+              onClose={() => {
+                setTextEditId(null)
+                useEditorStore.getState().selectElement(null)
+              }}
+            />
+          ) : (
+            <CustomizeSidebar activeTab={activeTab} />
+          )}
+        </AnimatePresence>
 
         {/* Canvas area */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
-
           <CustomizeCanvas />
 
           {/* Zoom controls */}
