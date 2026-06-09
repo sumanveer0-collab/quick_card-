@@ -1,7 +1,4 @@
 {
   "/customize/page": "app/customize/page.js",
-  "/business-card-designs/page": "app/business-card-designs/page.js",
-  "/templates/page": "app/templates/page.js",
-  "/product-options/page": "app/product-options/page.js",
-  "/business-cards/search/page": "app/business-cards/search/page.js"
+  "/product-options/page": "app/product-options/page.js"
 }

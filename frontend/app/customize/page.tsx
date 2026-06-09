@@ -46,19 +46,40 @@ function CustomizeEditor() {
   const [isDownloading, setIsDownloading] = useState(false)
   const [textEditId, setTextEditId] = useState<string | null>(null)
 
-  // Open text edit panel when a text element is selected
+  // Open text edit panel when a text element is selected on canvas
   useEffect(() => {
     if (selectedId) {
       const el = elements.find(e => e.id === selectedId)
       if (el?.type === 'text') {
         setTextEditId(selectedId)
+        setActiveTab('text')
       } else {
+        // Non-text selected — only close editor if Text tab isn't the active tab
         setTextEditId(null)
       }
     } else {
       setTextEditId(null)
     }
   }, [selectedId, elements])
+
+  // When Text tab is clicked, auto-select the first text element if any
+  const handleTabClick = (id: TabType) => {
+    setActiveTab(id)
+    if (id === 'text') {
+      const firstText = elements.find(e => e.type === 'text')
+      if (firstText) {
+        useEditorStore.getState().selectElement(firstText.id)
+        setTextEditId(firstText.id)
+      } else {
+        setTextEditId(null)
+      }
+    } else {
+      // Switching away from text tab — deselect text editor but keep canvas selection
+      if (textEditId) {
+        setTextEditId(null)
+      }
+    }
+  }
 
   const { createDesign } = useDesigns()
   const { loadDesign } = useLoadDesign()
@@ -375,7 +396,7 @@ function CustomizeEditor() {
             return (
               <motion.button
                 key={id}
-                onClick={() => setActiveTab(id)}
+                onClick={() => handleTabClick(id)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`relative w-14 h-14 rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${
@@ -401,6 +422,7 @@ function CustomizeEditor() {
               elementId={textEditId}
               onClose={() => {
                 setTextEditId(null)
+                setActiveTab('text')
                 useEditorStore.getState().selectElement(null)
               }}
             />
