@@ -105,28 +105,33 @@ function convertElement(el: CardElement, zIndex: number): CanvasElement | Canvas
       }
 
     case 'text': {
+      // SVG text anchors: 'center' means x is centre, 'right' means x is right edge.
+      // We map to Konva text left-edge x.
       const rawX = el.x * SCALE + BLEED
       const rawY = el.y * SCALE + BLEED
       const fSize = sf(el.size)
-      const isBold = el.weight === 'bold'
 
-      // Calculate natural text width based on content
-      // Bold chars are ~0.62× fontSize wide, normal ~0.52×
-      const charW = fSize * (isBold ? 0.62 : 0.52)
-      const naturalWidth = Math.ceil(el.text.length * charW) + 32 // +32 for padding
-      // Clamp: minimum 2× fontSize, maximum full card width
-      const width = Math.min(Math.max(naturalWidth, fSize * 2), sw(340))
-      const height = Math.round(fSize * 1.8)
+      // Use full card width so text never wraps prematurely.
+      // The text element itself clips to its width via Konva's wrap="none".
+      const fullCardWidth = sw(350)  // full 1050px card width
+      const height = Math.round(fSize * 2.2)  // enough for one line + padding
 
-      // Anchor → left-edge x
-      let x = rawX
-      if (el.align === 'center') x = rawX - width / 2
-      if (el.align === 'right')  x = rawX - width
+      // X: for center/right-anchored text, offset from the anchor point
+      let x: number
+      if (el.align === 'center') {
+        // anchor is at rawX, element goes from rawX - fullCardWidth/2
+        x = rawX - fullCardWidth / 2
+      } else if (el.align === 'right') {
+        x = rawX - fullCardWidth
+      } else {
+        x = rawX
+      }
 
-      // Clamp to canvas area
-      x = Math.max(BLEED, Math.min(x, BLEED + sw(340) - 40))
+      // Keep within canvas bounds (bleed area)
+      x = Math.max(BLEED, Math.min(x, BLEED + sw(350) - 80))
 
-      // Y: SVG y is text baseline → convert to top of box
+      // Y: rawY in SVG is the text baseline. Konva y is top of bounding box.
+      // Subtract ~75% of line height to approximate baseline-to-top conversion.
       const y = Math.max(BLEED, rawY - fSize * 0.85)
 
       return {
@@ -135,11 +140,11 @@ function convertElement(el: CardElement, zIndex: number): CanvasElement | Canvas
         text: el.text,
         x,
         y,
-        width,
+        width: fullCardWidth,
         height,
         fontSize: fSize,
         fontFamily: 'Inter',
-        fontWeight: isBold ? 'bold' : 'normal',
+        fontWeight: el.weight === 'bold' ? 'bold' : 'normal',
         fill: el.fill,
         align: el.align ?? 'left',
         letterSpacing: el.spacing ? el.spacing * 0.4 : 0,

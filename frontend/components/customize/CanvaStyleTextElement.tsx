@@ -13,10 +13,10 @@ interface CanvaStyleTextElementProps {
   onDoubleClick: () => void
 }
 
-// Minimal padding — keeps bounding box tight to actual text
+// Canva-style padding (minimal)
 const TEXT_PADDING = {
-  horizontal: 4,
-  vertical: 4,
+  horizontal: 16,
+  vertical: 12,
 }
 
 // Canva brand colors
@@ -241,8 +241,8 @@ export default function CanvaStyleTextElement({
           verticalAlign="middle"
           letterSpacing={element.letterSpacing || 0}
           lineHeight={element.lineHeight || 1.2}
-          wrap="word"
-          ellipsis={false}
+          wrap="none"
+          ellipsis={true}
           opacity={isEditing ? 0.3 : 1}
           listening={false}
         />

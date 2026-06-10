@@ -21,6 +21,7 @@ import CanvasTextEditor from './CanvasTextEditor'
 import ImageEditorToolbar from './ImageEditorToolbar'
 import FilteredImage from './FilteredImage'
 import VistaprintFloatingToolbar from './VistaprintFloatingToolbar'
+import ShapeFloatingToolbar from './ShapeFloatingToolbar'
 import { replacePlaceholders } from '@/lib/template-engine'
 
 // ── Template HTML iframe rendered behind Konva stage ──────────────────────
@@ -132,14 +133,20 @@ export default function CustomizeCanvas() {
   useEffect(() => {
     // Calculate scale based on available viewport space
     const updateScale = () => {
-      const containerWidth = window.innerWidth - 400 // Account for sidebars
-      const containerHeight = window.innerHeight - 200 // Account for navbar and toolbar
-      
+      // Get actual available space from the container if possible
+      const sidebarWidth = 320  // left sidebar approx width
+      const iconNavWidth = 80   // icon nav width
+      const bottomBarH = 56     // bottom action bar
+      const topBarH = 56        // top header
+
+      const containerWidth = window.innerWidth - sidebarWidth - iconNavWidth - 32
+      const containerHeight = window.innerHeight - topBarH - bottomBarH - 64
+
       const scaleX = containerWidth / CANVAS_WIDTH_PX
       const scaleY = containerHeight / CANVAS_HEIGHT_PX
-      const autoScale = Math.min(scaleX, scaleY, 1.2) // Max scale of 1.2
-      
-      const baseScale = Math.max(0.6, autoScale) // Minimum scale of 0.6
+      const autoScale = Math.min(scaleX, scaleY, 1.0) // Max scale 1.0
+
+      const baseScale = Math.max(0.4, autoScale)
       const scale = baseScale * (zoom / 100)
       setDisplayScale(scale)
       setStageSize({
@@ -461,15 +468,16 @@ export default function CustomizeCanvas() {
   }
 
   return (
-    <div className="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-gray-600 to-gray-500 overflow-auto relative">
+    <div className="flex-1 flex items-center justify-center p-6 bg-[#6b7280] overflow-auto relative">
       <div className="relative" ref={containerRef}>
-        {/* Card Canvas */}
+        {/* Card Canvas — full bleed size, no overflow clipping */}
         <div
-          className="relative shadow-2xl rounded-lg overflow-hidden"
+          className="relative shadow-2xl"
           style={{
             width: stageSize.width,
             height: stageSize.height,
             background: templateHtml ? 'transparent' : getBackgroundStyle(),
+            overflow: 'visible',
           }}
         >
           {/* ── Template HTML iframe (rendered behind Konva stage) ── */}
@@ -484,8 +492,86 @@ export default function CustomizeCanvas() {
             onMouseDown={handleDeselect}
             onTouchStart={handleDeselect}
             onContextMenu={handleContextMenu}
-            style={{ position: 'relative', zIndex: 1, background: 'transparent' }}
+            style={{ position: 'relative', zIndex: 1, background: 'transparent', display: 'block' }}
           >
+            {/* ── Layer 1: Bleed layer — images & shapes extend to full bleed boundary ── */}
+            <Layer
+              clipX={0}
+              clipY={0}
+              clipWidth={CANVAS_WIDTH_PX}
+              clipHeight={CANVAS_HEIGHT_PX}
+            >
+              {elements
+                .filter((el) => el.visible !== false && (el.type === 'shape' || el.type === 'image' || el.type === 'icon'))
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((element) => {
+                  const isSelected = element.id === selectedId
+
+                  if (element.type === 'image') {
+                    return (
+                      <FilteredImage
+                        key={element.id}
+                        element={element}
+                        isSelected={isSelected}
+                        onSelect={() => handleSelect(element.id)}
+                        onChange={(attrs) => {
+                          updateElement(element.id, attrs)
+                          const tempElement = { ...element, ...attrs }
+                          if (checkSafeArea(tempElement)) {
+                            toast.error('⚠️ Element is outside safe area!', {
+                              duration: 2000,
+                              position: 'top-center',
+                            })
+                          }
+                        }}
+                      />
+                    )
+                  }
+
+                  if (element.type === 'icon') {
+                    return (
+                      <IconElement
+                        key={element.id}
+                        element={element}
+                        isSelected={isSelected}
+                        onSelect={() => handleSelect(element.id)}
+                        onDragEnd={(x, y) => handleDragEnd(element, x, y)}
+                        onTransformEnd={(attrs) => handleTextTransformEnd(element, attrs)}
+                      />
+                    )
+                  }
+
+                  if (element.type === 'shape' && element.svg) {
+                    return (
+                      <SVGGraphicElement
+                        key={element.id}
+                        element={element}
+                        isSelected={isSelected}
+                        onSelect={() => handleSelect(element.id)}
+                        onDragEnd={(x, y) => handleDragEnd(element, x, y)}
+                        onTransformEnd={(attrs) => handleTextTransformEnd(element, attrs)}
+                      />
+                    )
+                  }
+
+                  if (element.type === 'shape') {
+                    return (
+                      <EditableGraphicElement
+                        key={element.id}
+                        element={element}
+                        isSelected={isSelected}
+                        onSelect={() => handleSelect(element.id)}
+                        onDragEnd={(x, y) => handleDragEnd(element, x, y)}
+                        onTransformEnd={(attrs) => handleTextTransformEnd(element, attrs)}
+                      />
+                    )
+                  }
+
+                  return null
+                })}
+            </Layer>
+
+            {/* ── Layer 2: Trim layer — text stays within trim boundary, guides shown here ── */}
             <Layer
               clipX={BLEED_PX}
               clipY={BLEED_PX}
@@ -518,101 +604,27 @@ export default function CustomizeCanvas() {
                 />
               )}
 
-              {/* Render elements */}
+              {/* Text elements */}
               {elements
-                .filter((el) => el.visible !== false)
+                .filter((el) => el.visible !== false && el.type === 'text')
                 .sort((a, b) => a.zIndex - b.zIndex)
                 .map((element) => {
                   const isSelected = element.id === selectedId
                   const isEditing = editingTextId === element.id
+                  const TextComponent = useCanvaStyle ? CanvaStyleTextElement : ProfessionalTextElement
 
-                  if (element.type === 'text') {
-                    const TextComponent = useCanvaStyle ? CanvaStyleTextElement : ProfessionalTextElement
-                    
-                    return (
-                      <TextComponent
-                        key={element.id}
-                        element={element}
-                        isSelected={isSelected}
-                        isEditing={isEditing}
-                        onSelect={() => handleSelect(element.id)}
-                        onDragEnd={(x, y) => handleDragEnd(element, x, y)}
-                        onTransformEnd={(attrs) => handleTextTransformEnd(element, attrs)}
-                        onDoubleClick={() => handleTextDoubleClick(element.id)}
-                      />
-                    )
-                  }
-
-                  if (element.type === 'shape') {
-                    // All shapes — including rect, circle, line — go through
-                    // SVGGraphicElement (if svg present) or EditableGraphicElement
-                    // so that the Transformer resize handles are always attached.
-                  }
-
-                  if (element.type === 'image') {
-                    return (
-                      <FilteredImage
-                        key={element.id}
-                        element={element}
-                        isSelected={isSelected}
-                        onSelect={() => handleSelect(element.id)}
-                        onChange={(attrs) => {
-                          updateElement(element.id, attrs)
-                          const tempElement = { ...element, ...attrs }
-                          if (checkSafeArea(tempElement)) {
-                            toast.error('⚠️ Element is outside safe area!', {
-                              duration: 2000,
-                              position: 'top-center',
-                            })
-                          }
-                        }}
-                      />
-                    )
-                  }
-
-                  // Handle icon elements specifically
-                  if (element.type === 'icon') {
-                    return (
-                      <IconElement
-                        key={element.id}
-                        element={element}
-                        isSelected={isSelected}
-                        onSelect={() => handleSelect(element.id)}
-                        onDragEnd={(x, y) => handleDragEnd(element, x, y)}
-                        onTransformEnd={(attrs) => handleTextTransformEnd(element, attrs)}
-                      />
-                    )
-                  }
-
-                  // Handle SVG-based graphic elements (shapes)
-                  if (element.type === 'shape' && element.svg) {
-                    return (
-                      <SVGGraphicElement
-                        key={element.id}
-                        element={element}
-                        isSelected={isSelected}
-                        onSelect={() => handleSelect(element.id)}
-                        onDragEnd={(x, y) => handleDragEnd(element, x, y)}
-                        onTransformEnd={(attrs) => handleTextTransformEnd(element, attrs)}
-                      />
-                    )
-                  }
-
-                  // Handle basic graphic elements (shapes without SVG)
-                  if (element.type === 'shape') {
-                    return (
-                      <EditableGraphicElement
-                        key={element.id}
-                        element={element}
-                        isSelected={isSelected}
-                        onSelect={() => handleSelect(element.id)}
-                        onDragEnd={(x, y) => handleDragEnd(element, x, y)}
-                        onTransformEnd={(attrs) => handleTextTransformEnd(element, attrs)}
-                      />
-                    )
-                  }
-
-                  return null
+                  return (
+                    <TextComponent
+                      key={element.id}
+                      element={element}
+                      isSelected={isSelected}
+                      isEditing={isEditing}
+                      onSelect={() => handleSelect(element.id)}
+                      onDragEnd={(x, y) => handleDragEnd(element, x, y)}
+                      onTransformEnd={(attrs) => handleTextTransformEnd(element, attrs)}
+                      onDoubleClick={() => handleTextDoubleClick(element.id)}
+                    />
+                  )
                 })}
             </Layer>
           </Stage>
@@ -667,23 +679,17 @@ export default function CustomizeCanvas() {
 
         {/* Canva-style Toolbar + Quick Actions removed — TextEditPanel on right side handles all text editing */}
 
-        {/* Image Editor Toolbar */}
-        {showImageEditor && selectedId && !editingTextId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !vistaprintToolbarId && (
-          <ImageEditorToolbar
-            element={elements.find(el => el.id === selectedId)}
-            onClose={() => setShowImageEditor(false)}
-          />
-        )}
+        {/* Image Editor Toolbar — removed */}
 
-        {/* Floating Toolbar for Graphics */}
-        {selectedGraphicId && !vistaprintEditingId && !advancedEditingId && !canvasTextEditorId && !showImageEditor && !vistaprintToolbarId && (
-          <FloatingToolbar
-            selectedElement={elements.find(el => el.id === selectedGraphicId) as any}
-            onUpdate={handleUpdateGraphicElement}
-            onDuplicate={handleDuplicateGraphic}
-            onDelete={handleDeleteGraphic}
-            onBringForward={handleBringGraphicForward}
-            onSendBackward={handleSendGraphicBackward}
+        {/* Floating Toolbar for Graphics — removed */}
+
+        {/* Shape / Image / Icon floating toolbar */}
+        {selectedGraphicId && (
+          <ShapeFloatingToolbar
+            elementId={selectedGraphicId}
+            displayScale={displayScale}
+            canvasRef={containerRef}
+            onDelete={() => setSelectedGraphicId(null)}
           />
         )}
 
