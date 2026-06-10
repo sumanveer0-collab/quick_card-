@@ -7,6 +7,8 @@ import {
   Upload, Layers, Palette, Sparkles, Plus 
 } from 'lucide-react';
 import { BusinessCardDesign, EditorState, CardElement } from '@/types/business-card.types';
+import BackgroundColorPicker from '@/components/shared/BackgroundColorPicker';
+import { isGradientBackground } from '@/lib/background-palette';
 
 interface EditorSidebarProps {
   design: BusinessCardDesign;
@@ -19,6 +21,7 @@ const tabs = [
   { id: 'elements', label: 'Elements', icon: Square },
   { id: 'text', label: 'Text', icon: Type },
   { id: 'graphics', label: 'Graphics', icon: Sparkles },
+  { id: 'background', label: 'Background', icon: Palette },
   { id: 'uploads', label: 'Uploads', icon: Upload },
   { id: 'layers', label: 'Layers', icon: Layers },
 ];
@@ -191,6 +194,33 @@ export default function EditorSidebar({
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'background' && (
+          <div className="bg-white rounded-xl p-3 -mx-1">
+            <BackgroundColorPicker
+              value={design[editorState.currentSide].background.color || '#ffffff'}
+              onChange={(color) => {
+                if (isGradientBackground(color)) {
+                  const newDesign = { ...design };
+                  newDesign[editorState.currentSide].background = {
+                    type: 'gradient',
+                    color: color,
+                  };
+                  onUpdateDesign(newDesign);
+                  return;
+                }
+                const newDesign = { ...design };
+                newDesign[editorState.currentSide].background = {
+                  type: 'solid',
+                  color,
+                };
+                onUpdateDesign(newDesign);
+              }}
+              title="Background color"
+              showGradients
+            />
           </div>
         )}
 

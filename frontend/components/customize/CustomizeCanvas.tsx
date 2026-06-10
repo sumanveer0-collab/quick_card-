@@ -23,6 +23,7 @@ import FilteredImage from './FilteredImage'
 import VistaprintFloatingToolbar from './VistaprintFloatingToolbar'
 import ShapeFloatingToolbar from './ShapeFloatingToolbar'
 import { replacePlaceholders } from '@/lib/template-engine'
+import { isGradientBackground } from '@/lib/background-palette'
 
 // ── Template HTML iframe rendered behind Konva stage ──────────────────────
 function TemplateIframe({ displayScale }: { displayScale: number }) {
@@ -232,16 +233,13 @@ export default function CustomizeCanvas() {
     setCanvasTextEditorId(null)
     setVistaprintToolbarId(null)
     
-    // Check if it's a graphic element
     const element = elements.find(el => el.id === id)
-    if (element && (element.type === 'shape' || element.type === 'icon' || element.type === 'image')) {
+    if (element?.type === 'shape') {
       setSelectedGraphicId(id)
-      // Show image editor for images, icons, and shapes
-      if (element.type === 'image' || element.type === 'icon') {
-        setShowImageEditor(true)
-      } else {
-        setShowImageEditor(false)
-      }
+      setShowImageEditor(false)
+    } else if (element && (element.type === 'icon' || element.type === 'image')) {
+      setSelectedGraphicId(null)
+      setShowImageEditor(true)
     } else {
       setSelectedGraphicId(null)
       setShowImageEditor(false)
@@ -480,6 +478,17 @@ export default function CustomizeCanvas() {
             overflow: 'visible',
           }}
         >
+          {/* Shape toolbar — pinned to top of card canvas */}
+          {selectedGraphicId && elements.find(e => e.id === selectedGraphicId)?.type === 'shape' && (
+            <ShapeFloatingToolbar
+              elementId={selectedGraphicId}
+              onDelete={() => {
+                setSelectedGraphicId(null)
+                selectElement(null)
+              }}
+            />
+          )}
+
           {/* ── Template HTML iframe (rendered behind Konva stage) ── */}
           <TemplateIframe displayScale={displayScale} />
 
@@ -501,6 +510,17 @@ export default function CustomizeCanvas() {
               clipWidth={CANVAS_WIDTH_PX}
               clipHeight={CANVAS_HEIGHT_PX}
             >
+              {!templateHtml && !isGradientBackground(background) && (
+                <Rect
+                  x={0}
+                  y={0}
+                  width={CANVAS_WIDTH_PX}
+                  height={CANVAS_HEIGHT_PX}
+                  fill={background || '#ffffff'}
+                  listening={false}
+                />
+              )}
+
               {elements
                 .filter((el) => el.visible !== false && (el.type === 'shape' || el.type === 'image' || el.type === 'icon'))
                 .sort((a, b) => a.zIndex - b.zIndex)
@@ -682,16 +702,6 @@ export default function CustomizeCanvas() {
         {/* Image Editor Toolbar — removed */}
 
         {/* Floating Toolbar for Graphics — removed */}
-
-        {/* Shape / Image / Icon floating toolbar */}
-        {selectedGraphicId && (
-          <ShapeFloatingToolbar
-            elementId={selectedGraphicId}
-            displayScale={displayScale}
-            canvasRef={containerRef}
-            onDelete={() => setSelectedGraphicId(null)}
-          />
-        )}
 
         {/* Card Info */}
         <div className="absolute -bottom-8 left-0 right-0 text-center text-xs text-gray-500 font-mono">

@@ -8,6 +8,7 @@ import {
   ArrowUp, ArrowDown, ChevronsUp, ChevronsDown,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/editor.store'
+import { measureKonvaText, getFittedTextX } from './CanvaStyleTextElement'
 
 const FONTS = [
   'Inter', 'Poppins', 'Roboto', 'Montserrat', 'Lato', 'Open Sans',
@@ -116,7 +117,32 @@ export default function TextEditPanel({ elementId, onClose }: Props) {
 
   const handleTextChange = (v: string) => { setText(v); apply({ text: v }) }
   const handleFontFamily = (v: string) => { setFontFamily(v); apply({ fontFamily: v }) }
-  const handleFontSize   = (v: number) => { setFontSize(v); apply({ fontSize: v }) }
+  const handleFontSize = (v: number) => {
+    const size = Math.max(6, Math.min(300, Math.round(v)))
+    setFontSize(size)
+
+    const fitted = measureKonvaText({
+      text: el.text,
+      fontSize: size,
+      fontFamily: el.fontFamily,
+      fontWeight: el.fontWeight,
+      fontStyle: el.fontStyle,
+      letterSpacing: el.letterSpacing,
+      lineHeight: el.lineHeight,
+    })
+
+    const patch: Record<string, number> = {
+      fontSize: size,
+      width: fitted.width,
+      height: fitted.height,
+    }
+
+    if (el.align === 'center' || el.align === 'right') {
+      patch.x = getFittedTextX(el.x, el.width, fitted.width, el.align)
+    }
+
+    apply(patch)
+  }
   const handleBold       = () => { const n = !bold; setBold(n); apply({ fontWeight: n ? 'bold' : 'normal' }) }
   const handleItalic     = () => { const n = !italic; setItalic(n); apply({ fontStyle: n ? 'italic' : 'normal' }) }
   const handleUnderline  = () => { const n = !underline; setUnderline(n); apply({ underline: n, textDecoration: n ? 'underline' : 'none' }) }

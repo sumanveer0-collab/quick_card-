@@ -1,3 +1,4 @@
 {
-  "/customize/page": "app/customize/page.js"
+  "/customize/page": "app/customize/page.js",
+  "/business-cards/search/page": "app/business-cards/search/page.js"
 }

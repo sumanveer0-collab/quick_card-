@@ -2,37 +2,16 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Search, X, Check, Crown, Loader2 } from 'lucide-react'
 import { replacePlaceholders } from '@/lib/template-engine'
-import { templates as localTemplates } from '@/lib/templates'
+import { catalogCategories } from '@/lib/business-cards/catalog'
+import { getCatalogPanelTemplates, type CatalogPanelTemplate } from '@/lib/templates/catalog-templates'
+import BusinessCardMiniPreview, { CARD_DESIGNS } from '@/components/business-cards/search/BusinessCardMiniPreview'
 
 const ALL_CAT = 'All'
 
-interface ApiTemplate {
-  _id: string
-  name: string
-  category: string
-  isPremium: boolean
-  layoutConfig: Record<string, any>
-  frontHTML?: string
-  frontCSS?: string
-  backHTML?: string
-  backCSS?: string
-}
-
-// Convert local static templates → ApiTemplate shape so the same UI works
-function localToApiTemplate(t: (typeof localTemplates)[number]): ApiTemplate {
-  return {
-    _id: t.id,
-    name: t.name,
-    category: t.category,
-    isPremium: false,
-    layoutConfig: { background: t.background },
-    frontHTML: '',
-    frontCSS: '',
-  }
-}
+type PanelTemplate = CatalogPanelTemplate
 
 // ── Mini iframe thumbnail ────────────────────────────────────────────────────
-function buildDoc(tmpl: ApiTemplate): string {
+function buildDoc(tmpl: PanelTemplate): string {
   const layout = tmpl.layoutConfig || {}
   const bg = layout.background || '#ffffff'
   const font = layout.fontFamily || 'Inter'
@@ -60,9 +39,12 @@ ${css}
 </style></head><body>${filled || `<div style="width:100%;height:100%;background:${bg};display:flex;align-items:center;justify-content:center;"><span style="color:${primary};font-size:11px;font-weight:700;opacity:0.5;">${tmpl.name}</span></div>`}</body></html>`
 }
 
-function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: ApiTemplate; selected: boolean; onClick: () => void }) {
+function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: PanelTemplate; selected: boolean; onClick: () => void }) {
   const ref = useRef<HTMLIFrameElement>(null)
   const hasHtml = !!(tmpl.frontHTML)
+  const catalogDesign = tmpl.designId
+    ? CARD_DESIGNS.find(d => d.id === tmpl.designId)
+    : undefined
 
   useEffect(() => {
     if (!hasHtml) return
@@ -70,7 +52,7 @@ function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: ApiTemplate; sel
     if (!el) return
     const doc = el.contentDocument
     if (doc) { doc.open(); doc.write(buildDoc(tmpl)); doc.close() }
-  }, [tmpl._id])
+  }, [tmpl._id, hasHtml])
 
   const bg = tmpl.layoutConfig?.background || '#ffffff'
 
@@ -85,8 +67,11 @@ function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: ApiTemplate; sel
       style={{ aspectRatio: '1.75' }}
       title={tmpl.name}
     >
-      {hasHtml ? (
-        /* iframe preview for API templates */
+      {catalogDesign ? (
+        <div className="absolute inset-0 pointer-events-none bg-white">
+          <BusinessCardMiniPreview design={catalogDesign} />
+        </div>
+      ) : hasHtml ? (
         <div className="absolute inset-0 pointer-events-none">
           <iframe
             ref={ref}
@@ -96,7 +81,6 @@ function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: ApiTemplate; sel
           />
         </div>
       ) : (
-        /* Solid colour preview for local templates */
         <div
           className="absolute inset-0 flex items-center justify-center"
           style={{ background: bg }}
@@ -114,6 +98,13 @@ function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: ApiTemplate; sel
       {selected && (
         <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center z-10">
           <Check className="w-3 h-3 text-white" strokeWidth={3} />
+        </div>
+      )}
+
+      {/* FREE badge */}
+      {!tmpl.isPremium && (
+        <div className="absolute top-1.5 left-1.5 bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded z-10">
+          FREE
         </div>
       )}
 
@@ -135,10 +126,10 @@ function TemplateThumbnail({ tmpl, selected, onClick }: { tmpl: ApiTemplate; sel
 }
 
 // ── Panel ────────────────────────────────────────────────────────────────────
-const PAGE_SIZE = 10
+const PAGE_SIZE = 25
 
 export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => void }) {
-  const [apiTemplates, setApiTemplates] = useState<ApiTemplate[]>([])
+  const [apiTemplates, setApiTemplates] = useState<PanelTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
@@ -148,35 +139,17 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
   const [viewMode, setViewMode] = useState<'all' | 'categories'>('all')
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-    fetch(`${apiUrl}/templates?limit=100`)
-      .then(r => {
-        if (!r.ok) throw new Error('API error')
-        return r.json()
-      })
-      .then(json => {
-        const raw = json.data
-        const list: ApiTemplate[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : []
-        if (list.length > 0) {
-          setApiTemplates(list)
-        } else {
-          // API returned empty — use local templates
-          setApiTemplates(localTemplates.map(localToApiTemplate))
-        }
-      })
-      .catch(() => {
-        // API down — fall back to local static templates so the panel is never empty
-        setApiTemplates(localTemplates.map(localToApiTemplate))
-      })
-      .finally(() => setLoading(false))
+    setApiTemplates(getCatalogPanelTemplates())
+    setLoading(false)
   }, [])
 
-  // Build category list dynamically from loaded templates
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(apiTemplates.map(t => t.category).filter(Boolean)))
-    cats.sort()
-    return [ALL_CAT, ...cats]
-  }, [apiTemplates])
+  const categoryLabel = (id: string) =>
+    catalogCategories.find(c => c.id === id)?.label ?? id
+
+  const categories = useMemo(
+    () => catalogCategories.filter(c => c.id !== 'all').map(c => c.id),
+    [],
+  )
 
   const filtered = useMemo(() => {
     let list = apiTemplates
@@ -194,26 +167,11 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
   const visible = filtered.slice(0, visibleCount)
   const hasMore = visibleCount < filtered.length
 
-  const handleApply = async (tmpl: ApiTemplate) => {
+  const handleApply = async (tmpl: PanelTemplate) => {
     setSelectedId(tmpl._id)
     setApplying(true)
     try {
-      // For local templates (no frontHTML), just call onLoad directly
-      if (!tmpl.frontHTML) {
-        onLoad(tmpl._id)
-        return
-      }
-      // For API templates, try to fetch full data
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
-      const res = await fetch(`${apiUrl}/templates/${tmpl._id}`)
-      const json = await res.json()
-      const full = json.data || json
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('qc_selected_template_full', JSON.stringify(full))
-      }
-      onLoad(tmpl._id)
-    } catch {
-      onLoad(tmpl._id)
+      onLoad(tmpl.designId || tmpl._id)
     } finally {
       setApplying(false)
     }
@@ -279,17 +237,17 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
 
             {/* Category buttons grid */}
             <div className="grid grid-cols-2 gap-2">
-              {categories.slice(1).map(cat => (
+              {categories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(activeCategory === cat ? ALL_CAT : cat)}
-                  className={`py-2.5 px-3 rounded-lg text-[11px] font-bold capitalize text-left transition-all ${
+                  className={`py-2.5 px-3 rounded-lg text-[11px] font-bold text-left transition-all ${
                     activeCategory === cat
                       ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-300'
                       : 'bg-gray-800 text-white hover:bg-gray-700'
                   }`}
                 >
-                  {cat}
+                  {categoryLabel(cat)}
                 </button>
               ))}
               {/* All Templates button */}
@@ -318,8 +276,8 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
               <div className="space-y-2 pt-1">
                 {/* Category header */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-gray-600 capitalize">
-                    {activeCategory === ALL_CAT ? 'All Templates' : activeCategory}
+                  <span className="text-[11px] font-semibold text-gray-600">
+                    {activeCategory === ALL_CAT ? 'All Templates' : categoryLabel(activeCategory)}
                   </span>
                   <span className="text-[10px] text-gray-400">{filtered.length} templates</span>
                 </div>
@@ -382,7 +340,7 @@ export default function TemplatesPanel({ onLoad }: { onLoad: (id: string) => voi
                       onClick={() => handleApply(tmpl)}
                     />
                     <div className="flex items-center justify-between px-0.5">
-                      <span className="text-[10px] text-gray-500 truncate capitalize">{tmpl.category}</span>
+                      <span className="text-[10px] text-gray-500 truncate">{categoryLabel(tmpl.category)}</span>
                       <button
                         onClick={() => handleApply(tmpl)}
                         disabled={applying && selectedId === tmpl._id}

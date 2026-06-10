@@ -212,9 +212,8 @@ export default function SidebarTools() {
         {/* Background */}
         <CollapsibleSection title="Background" icon={<Palette className="w-4 h-4" />}>
           <ColorPicker
-            value={background}
+            color={background}
             onChange={setBackground}
-            label="Background Color"
           />
         </CollapsibleSection>
 

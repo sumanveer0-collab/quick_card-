@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useLayoutEffect } from 'react'
 import { Group, Rect, Text, Transformer, Circle, Line } from 'react-konva'
 import Konva from 'konva'
 
@@ -23,72 +23,70 @@ const TEXT_PADDING = {
 const CANVA_CYAN = '#00C4CC'
 const CANVA_HANDLE_SIZE = 12
 
-// Helper function to calculate required dimensions for text
-const calculateTextDimensions = (
-  text: string,
-  fontSize: number,
-  width: number,
-  lineHeight: number = 1.2,
-  fontFamily: string = 'Inter',
-  fontWeight: string = 'normal'
-): { width: number; height: number; lines: number } => {
-  if (typeof window === 'undefined') {
-    return {
-      width: width,
-      height: fontSize * lineHeight + TEXT_PADDING.vertical * 2,
-      lines: 1
-    }
+const buildFontStyle = (element: {
+  fontStyle?: string
+  fontWeight?: string | number
+}) => {
+  const parts = [
+    element.fontStyle === 'italic' ? 'italic' : '',
+    element.fontWeight === 'bold' || element.fontWeight === 700 || element.fontWeight === '700' ? 'bold' : '',
+  ].filter(Boolean)
+  return parts.join(' ') || 'normal'
+}
+
+// Konva-native measurement — matches what is actually painted on canvas.
+export const measureKonvaText = (element: {
+  text?: string
+  fontSize?: number
+  fontFamily?: string
+  fontStyle?: string
+  fontWeight?: string | number
+  letterSpacing?: number
+  lineHeight?: number
+}): { width: number; height: number } => {
+  const text = element.text || ' '
+  const fontSize = element.fontSize || 16
+  const lines = Math.max(1, text.split('\n').length)
+  const fallback = {
+    width: Math.max(80, text.length * fontSize * 0.65 + TEXT_PADDING.horizontal * 2),
+    height: Math.max(40, lines * fontSize * (element.lineHeight || 1.2) + TEXT_PADDING.vertical * 2),
   }
-  
-  const canvas = document.createElement('canvas')
-  const context = canvas.getContext('2d')
-  if (!context) {
-    return {
-      width: width,
-      height: fontSize * lineHeight + TEXT_PADDING.vertical * 2,
-      lines: 1
-    }
-  }
-  
-  // Set font with weight
-  context.font = `${fontWeight} ${fontSize}px ${fontFamily}`
-  
-  // Calculate available width for text (minus padding)
-  const availableWidth = width - (TEXT_PADDING.horizontal * 2)
-  
-  // Split text into words and calculate lines
-  const words = text.split(' ')
-  let lines = 1
-  let currentLine = ''
-  let maxLineWidth = 0
-  
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word
-    const metrics = context.measureText(testLine)
-    
-    if (metrics.width > availableWidth && currentLine) {
-      maxLineWidth = Math.max(maxLineWidth, context.measureText(currentLine).width)
-      lines++
-      currentLine = word
-    } else {
-      currentLine = testLine
-    }
-  }
-  
-  // Measure final line
-  if (currentLine) {
-    maxLineWidth = Math.max(maxLineWidth, context.measureText(currentLine).width)
-  }
-  
-  // Calculate total height: lines * fontSize * lineHeight + padding
-  const textHeight = lines * fontSize * lineHeight
-  const totalHeight = textHeight + (TEXT_PADDING.vertical * 2)
-  
+
+  if (typeof window === 'undefined') return fallback
+
+  const probe = new Konva.Text({
+    text,
+    fontSize,
+    fontFamily: element.fontFamily || 'Inter',
+    fontStyle: buildFontStyle(element),
+    letterSpacing: element.letterSpacing || 0,
+    lineHeight: element.lineHeight || 1.2,
+    wrap: 'none',
+    padding: 0,
+  })
+
   return {
-    width: maxLineWidth + (TEXT_PADDING.horizontal * 2),
-    height: Math.max(totalHeight, 40), // Minimum 40px
-    lines
+    width: Math.max(80, Math.ceil(probe.width()) + TEXT_PADDING.horizontal * 2 + 4),
+    height: Math.max(40, Math.ceil(probe.height()) + TEXT_PADDING.vertical * 2 + 4),
   }
+}
+
+export const getFittedTextX = (
+  x: number,
+  storedWidth: number,
+  fittedWidth: number,
+  align: string | undefined,
+) => {
+  if (align === 'center') return x + (storedWidth - fittedWidth) / 2
+  if (align === 'right') return x + (storedWidth - fittedWidth)
+  return x
+}
+
+const getFittedX = getFittedTextX
+
+const readFontSize = (value: unknown) => {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? n : 16
 }
 
 export default function CanvaStyleTextElement({
@@ -104,33 +102,80 @@ export default function CanvaStyleTextElement({
   const textRef = useRef<Konva.Text>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
   const [isResizing, setIsResizing] = useState(false)
+  const fontPx = readFontSize(element.fontSize)
+  const [boxSize, setBoxSize] = useState(() => measureKonvaText({ ...element, fontSize: fontPx }))
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const node = textRef.current
+      if (node && node.fontSize() !== fontPx) {
+        node.fontSize(fontPx)
+        node.clearCache()
+      }
+
+      const next = node
+        ? {
+            width: Math.max(80, Math.ceil(node.width()) + TEXT_PADDING.horizontal * 2 + 4),
+            height: Math.max(40, Math.ceil(node.height()) + TEXT_PADDING.vertical * 2 + 4),
+          }
+        : measureKonvaText({ ...element, fontSize: fontPx })
+
+      setBoxSize(prev =>
+        prev.width === next.width && prev.height === next.height ? prev : next
+      )
+
+      node?.getLayer()?.batchDraw()
+    }
+
+    measure()
+    const frame = requestAnimationFrame(measure)
+    return () => cancelAnimationFrame(frame)
+  }, [
+    element.text,
+    fontPx,
+    element.fontFamily,
+    element.fontWeight,
+    element.fontStyle,
+    element.letterSpacing,
+    element.lineHeight,
+  ])
 
   useEffect(() => {
     if (isSelected && transformerRef.current && groupRef.current) {
       transformerRef.current.nodes([groupRef.current])
       transformerRef.current.getLayer()?.batchDraw()
     }
-  }, [isSelected])
+  }, [isSelected, boxSize.width, boxSize.height])
 
-  // Auto-resize disabled — template text uses wrap="none" with fixed height
-  // to prevent cascading height updates on initial render.
-  // Users can manually resize by dragging the transformer handles.
+  const boxWidth = boxSize.width
+  const boxHeight = boxSize.height
+  const boxX = getFittedX(element.x, element.width, boxWidth, element.align)
 
-  // Calculate text dimensions with padding
-  const textWidth = element.width - (TEXT_PADDING.horizontal * 2)
-  const textHeight = element.height - (TEXT_PADDING.vertical * 2)
+  // Persist tight bounds when templates load with an oversized full-card width.
+  useEffect(() => {
+    if (isResizing || isEditing) return
 
-  // Determine vertical alignment
-  const getVerticalAlign = () => {
-    if (element.verticalAlign === 'top') return TEXT_PADDING.vertical
-    if (element.verticalAlign === 'bottom') {
-      return element.height - textHeight - TEXT_PADDING.vertical
+    const looksLikeFullCardWidth = element.width >= 900
+    const needsWider = boxWidth > element.width + 2
+    const needsTaller = boxHeight > element.height + 2
+    const needsNarrower = element.width > boxWidth + 8
+    const needsShorter = element.height > boxHeight + 8
+    if (!looksLikeFullCardWidth && !needsWider && !needsTaller && !needsNarrower && !needsShorter) return
+
+    const patch: Record<string, number> = {}
+    if (looksLikeFullCardWidth || needsWider || needsNarrower) {
+      patch.width = boxWidth
+      if (looksLikeFullCardWidth || needsNarrower || needsWider) {
+        patch.x = getFittedX(element.x, element.width, boxWidth, element.align)
+      }
     }
-    // Center (default)
-    return (element.height - textHeight) / 2
-  }
-
-  const textY = getVerticalAlign()
+    if (needsTaller || needsShorter) patch.height = boxHeight
+    onTransformEnd(patch)
+  }, [
+    boxWidth, boxHeight, element.width, element.height, element.x, element.align,
+    element.text, element.fontSize, element.fontFamily, element.fontWeight,
+    element.letterSpacing, element.lineHeight, isResizing, isEditing,
+  ]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check if text is outside safe area
   const isOutsideSafe = element.outsideSafeArea || false
@@ -139,7 +184,7 @@ export default function CanvaStyleTextElement({
     <>
       <Group
         ref={groupRef}
-        x={element.x}
+        x={boxX}
         y={element.y}
         rotation={element.rotation}
         draggable={!isEditing && !element.locked}
@@ -163,36 +208,22 @@ export default function CanvaStyleTextElement({
           const scaleX = node.scaleX()
           const scaleY = node.scaleY()
 
-          // Reset scale
           node.scaleX(1)
           node.scaleY(1)
 
-          // Calculate new dimensions
-          const newWidth = Math.max(80, node.width() * scaleX)
-          const newHeight = Math.max(40, node.height() * scaleY)
-
-          // Calculate if text fits in new dimensions
-          const dimensions = calculateTextDimensions(
-            element.text || '',
-            element.fontSize || 16,
-            newWidth,
-            element.lineHeight || 1.2,
-            element.fontFamily || 'Inter',
-            element.fontWeight || 'normal'
-          )
-
-          // Ensure height is sufficient for text
-          const finalHeight = Math.max(newHeight, dimensions.height)
+          const scale = Math.abs(scaleY - 1) >= Math.abs(scaleX - 1) ? scaleY : scaleX
+          const newFontSize = Math.max(6, Math.min(300, Math.round(fontPx * scale)))
+          const fitted = measureKonvaText({ ...element, fontSize: newFontSize })
 
           onTransformEnd({
             x: node.x(),
             y: node.y(),
-            width: newWidth,
-            height: finalHeight,
+            width: fitted.width,
+            height: fitted.height,
             rotation: node.rotation(),
+            fontSize: newFontSize,
           })
 
-          // Re-enable auto-resize after transform
           setTimeout(() => setIsResizing(false), 100)
         }}
       >
@@ -215,8 +246,8 @@ export default function CanvaStyleTextElement({
         <Rect
           x={0}
           y={0}
-          width={element.width}
-          height={element.height}
+          width={boxWidth}
+          height={boxHeight}
           fill="transparent"
           listening={true}
         />
@@ -225,25 +256,21 @@ export default function CanvaStyleTextElement({
         <Text
           ref={textRef}
           x={TEXT_PADDING.horizontal}
-          y={textY}
-          width={textWidth}
+          y={TEXT_PADDING.vertical}
           text={element.text || ''}
-          fontSize={element.fontSize || 16}
+          fontSize={fontPx}
           fontFamily={element.fontFamily || 'Inter'}
-          fontStyle={[
-            element.fontStyle === 'italic' ? 'italic' : '',
-            element.fontWeight === 'bold' || element.fontWeight === 700 || element.fontWeight === '700' ? 'bold' : '',
-          ].filter(Boolean).join(' ') || 'normal'}
+          fontStyle={buildFontStyle(element)}
           fill={element.fill || '#000000'}
           stroke={element.stroke || undefined}
           strokeWidth={element.strokeWidth || 0}
           align={element.align || 'left'}
-          verticalAlign="middle"
+          verticalAlign="top"
           letterSpacing={element.letterSpacing || 0}
           lineHeight={element.lineHeight || 1.2}
           wrap="none"
-          ellipsis={true}
-          opacity={isEditing ? 0.3 : 1}
+          ellipsis={false}
+          opacity={isEditing ? 0.3 : (element.opacity !== undefined ? element.opacity : 1)}
           listening={false}
         />
 
@@ -252,8 +279,8 @@ export default function CanvaStyleTextElement({
           <Rect
             x={0}
             y={0}
-            width={element.width}
-            height={element.height}
+            width={boxWidth}
+            height={boxHeight}
             stroke="#f59e0b"
             strokeWidth={2}
             dash={[5, 5]}
@@ -278,33 +305,7 @@ export default function CanvaStyleTextElement({
             'middle-right',
           ]}
           boundBoxFunc={(oldBox, newBox) => {
-            // Minimum size constraints
-            const minWidth = 80
-            const minHeight = 40
-
-            // Prevent making box smaller than minimum
-            if (newBox.width < minWidth || newBox.height < minHeight) {
-              return oldBox
-            }
-
-            // Calculate if text would fit in new box
-            const dimensions = calculateTextDimensions(
-              element.text || '',
-              element.fontSize || 16,
-              newBox.width,
-              element.lineHeight || 1.2,
-              element.fontFamily || 'Inter',
-              element.fontWeight || 'normal'
-            )
-
-            // If text wouldn't fit, prevent resize
-            if (dimensions.height > newBox.height) {
-              return {
-                ...newBox,
-                height: dimensions.height
-              }
-            }
-
+            if (newBox.width < 48 || newBox.height < 28) return oldBox
             return newBox
           }}
           anchorSize={CANVA_HANDLE_SIZE}
@@ -324,9 +325,9 @@ export default function CanvaStyleTextElement({
         <Group>
           <Line
             points={[
-              element.x + element.width / 2,
+              boxX + boxWidth / 2,
               element.y - 40,
-              element.x + element.width / 2,
+              boxX + boxWidth / 2,
               element.y,
             ]}
             stroke={CANVA_CYAN}
@@ -334,7 +335,7 @@ export default function CanvaStyleTextElement({
             listening={false}
           />
           <Circle
-            x={element.x + element.width / 2}
+            x={boxX + boxWidth / 2}
             y={element.y - 40}
             radius={8}
             fill="#ffffff"

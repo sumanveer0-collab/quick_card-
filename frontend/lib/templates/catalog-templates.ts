@@ -19,6 +19,7 @@
 
 import { CanvasElement } from '@/store/editor.store'
 import { CARD_DESIGNS, CardDesign, CardElement } from '@/components/business-cards/search/BusinessCardMiniPreview'
+import { businessCardCatalog } from '@/lib/business-cards/catalog'
 
 const SCALE = 3        // 350→1050, 200→600
 const BLEED = 37.5     // px offset from canvas edge to trim area
@@ -111,18 +112,20 @@ function convertElement(el: CardElement, zIndex: number): CanvasElement | Canvas
       const rawY = el.y * SCALE + BLEED
       const fSize = sf(el.size)
 
-      // Use full card width so text never wraps prematurely.
-      // The text element itself clips to its width via Konva's wrap="none".
-      const fullCardWidth = sw(350)  // full 1050px card width
-      const height = Math.round(fSize * 2.2)  // enough for one line + padding
+      const textLines = el.text.split('\n')
+      const letterSpacing = el.spacing ? el.spacing * 0.4 : 0
+      const longestLine = textLines.reduce((a, b) => (a.length >= b.length ? a : b), '')
+      const estLineWidth =
+        longestLine.length * fSize * 0.58 + Math.max(0, longestLine.length - 1) * letterSpacing
+      const width = Math.min(sw(350) - 40, Math.max(80, Math.ceil(estLineWidth) + 32))
+      const height = Math.round(textLines.length * fSize * 1.25 + 24)
 
       // X: for center/right-anchored text, offset from the anchor point
       let x: number
       if (el.align === 'center') {
-        // anchor is at rawX, element goes from rawX - fullCardWidth/2
-        x = rawX - fullCardWidth / 2
+        x = rawX - width / 2
       } else if (el.align === 'right') {
-        x = rawX - fullCardWidth
+        x = rawX - width
       } else {
         x = rawX
       }
@@ -140,7 +143,7 @@ function convertElement(el: CardElement, zIndex: number): CanvasElement | Canvas
         text: el.text,
         x,
         y,
-        width: fullCardWidth,
+        width,
         height,
         fontSize: fSize,
         fontFamily: 'Inter',
@@ -281,3 +284,68 @@ export function resolveTemplateFromUrl(
 export const ALL_RESOLVED_TEMPLATES: Record<string, ResolvedTemplate> = Object.fromEntries(
   CARD_DESIGNS.map(d => [d.id, resolveCardDesign(d, DESIGN_NAMES[d.id] ?? d.id)])
 )
+
+// ─── Templates panel helpers ─────────────────────────────────────────────────
+
+export interface CatalogPanelTemplate {
+  _id: string
+  designId: string
+  templateId: string
+  name: string
+  category: string
+  isPremium: boolean
+  isPopular?: boolean
+  layoutConfig: { background: string }
+  frontHTML: string
+  frontCSS: string
+}
+
+/** All 25 search-page designs in TemplatesPanel shape. */
+export function getCatalogPanelTemplates(): CatalogPanelTemplate[] {
+  return businessCardCatalog.map(entry => ({
+    _id: entry.id,
+    designId: entry.designId,
+    templateId: entry.templateId,
+    name: entry.title,
+    category: entry.category,
+    isPremium: !entry.isFree,
+    isPopular: entry.isPopular,
+    layoutConfig: {
+      background: ALL_RESOLVED_TEMPLATES[entry.designId]?.background ?? '#ffffff',
+    },
+    frontHTML: '',
+    frontCSS: '',
+  }))
+}
+
+/** Resolve catalog id, designId, or templateId → designId. */
+export function resolveDesignIdFromKey(key: string): string | null {
+  const entry = businessCardCatalog.find(
+    c => c.id === key || c.designId === key || c.templateId === key,
+  )
+  if (entry) return entry.designId
+  if (ALL_RESOLVED_TEMPLATES[key]) return key
+  return CATALOG_TEMPLATE_ID_TO_DESIGN_ID[key] ?? null
+}
+
+export function applyCatalogDesignToEditor(
+  designId: string,
+  store: {
+    reset: () => void
+    setBackground: (c: string) => void
+    setTemplateHtml: (html: string, css: string) => void
+    addElement: (el: Omit<CanvasElement, 'id' | 'zIndex'> & Partial<Pick<CanvasElement, 'id' | 'zIndex'>>) => void
+  },
+): ResolvedTemplate | null {
+  const resolved = ALL_RESOLVED_TEMPLATES[designId]
+  if (!resolved) return null
+
+  store.reset()
+  store.setBackground(resolved.background)
+  store.setTemplateHtml('', '')
+  for (const el of resolved.elements) {
+    const { id, zIndex, ...elementData } = el
+    store.addElement(elementData as Omit<CanvasElement, 'id' | 'zIndex'>)
+  }
+  return resolved
+}

@@ -146,13 +146,18 @@ const EditorCanvas = forwardRef<any, EditorCanvasProps>(
       }
     };
 
+    const bgColor = currentSide.background.color || '#ffffff'
+    const bgIsGradient = bgColor.includes('gradient')
+
     return (
       <div className="flex items-center justify-center w-full h-full">
         <div 
-          className="relative bg-white rounded-lg shadow-2xl"
+          className="relative rounded-lg shadow-2xl"
           style={{
             width: cardWidth * scale,
             height: cardHeight * scale,
+            background: bgIsGradient ? bgColor : undefined,
+            backgroundColor: bgIsGradient ? undefined : bgColor,
           }}
         >
           {/* Grid overlay */}
@@ -175,6 +180,7 @@ const EditorCanvas = forwardRef<any, EditorCanvasProps>(
             height={cardHeight * scale}
             scaleX={scale}
             scaleY={scale}
+            style={{ background: 'transparent' }}
             onClick={(e) => {
               // Deselect when clicking on empty space
               if (e.target === e.target.getStage()) {
@@ -183,14 +189,16 @@ const EditorCanvas = forwardRef<any, EditorCanvasProps>(
             }}
           >
             <Layer>
-              {/* Background */}
-              <Rect
-                x={0}
-                y={0}
-                width={cardWidth}
-                height={cardHeight}
-                fill={currentSide.background.color || '#ffffff'}
-              />
+              {/* Background — solid fill on canvas; gradients use CSS behind stage */}
+              {!String(currentSide.background.color || '').includes('gradient') && (
+                <Rect
+                  x={0}
+                  y={0}
+                  width={cardWidth}
+                  height={cardHeight}
+                  fill={currentSide.background.color || '#ffffff'}
+                />
+              )}
 
               {/* Elements */}
               {currentSide.elements

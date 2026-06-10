@@ -6,10 +6,12 @@ import {
 import { useEditorStore } from '@/store/editor.store'
 import { useState, useMemo } from 'react'
 import { templates } from '@/lib/templates'
+import { applyCatalogDesignToEditor, resolveDesignIdFromKey } from '@/lib/templates/catalog-templates'
 import ProductOptionsPanel from './ProductOptionsPanel'
 import { GraphicsSidebar } from '../graphics/modern'
 import DynamicTextFieldsPanel from './DynamicTextFieldsPanel'
 import ColorPanel from './ColorPanel'
+import BackgroundColorPanel from './BackgroundColorPanel'
 import TemplatesPanel from './TemplatesPanel'
 import toast from 'react-hot-toast'
 
@@ -20,7 +22,7 @@ interface CustomizeSidebarProps {
 }
 
 export default function CustomizeSidebar({ activeTab }: CustomizeSidebarProps) {
-  const { addElement, setBackground, background } = useEditorStore()
+  const { addElement, setBackground } = useEditorStore()
   const [uploadedImages, setUploadedImages] = useState<string[]>([])
   
   // Template search and filter state
@@ -46,11 +48,23 @@ export default function CustomizeSidebar({ activeTab }: CustomizeSidebarProps) {
     })
   }, [searchQuery, selectedCategory])
 
-  // Load Template (local templates lib)
   const handleLoadTemplate = async (templateId: string) => {
     const store = useEditorStore.getState()
 
-    // Try API template first
+    const designId = resolveDesignIdFromKey(templateId)
+    if (designId) {
+      const resolved = applyCatalogDesignToEditor(designId, {
+        reset: () => store.reset(),
+        setBackground,
+        setTemplateHtml: store.setTemplateHtml,
+        addElement,
+      })
+      if (resolved) {
+        toast.success(`"${resolved.name}" loaded!`)
+        return
+      }
+    }
+
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'
       const res = await fetch(`${apiUrl}/templates/${templateId}`)
@@ -66,7 +80,6 @@ export default function CustomizeSidebar({ activeTab }: CustomizeSidebarProps) {
       }
     } catch {}
 
-    // Fallback to local templates
     const template = templates.find((t) => t.id === templateId)
     if (!template) return
     store.reset()
@@ -112,28 +125,6 @@ export default function CustomizeSidebar({ activeTab }: CustomizeSidebarProps) {
     }
     reader.readAsDataURL(file)
   }
-
-  // Background Colors
-  const backgroundColors = [
-    '#ffffff', '#f3f4f6', '#e5e7eb', '#d1d5db',
-    '#3b82f6', '#2563eb', '#1e40af', '#1e3a8a',
-    '#10b981', '#059669', '#047857', '#065f46',
-    '#f59e0b', '#d97706', '#b45309', '#92400e',
-    '#ef4444', '#dc2626', '#b91c1c', '#991b1b',
-    '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6',
-  ]
-
-  // Background Gradients
-  const backgroundGradients = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-  ]
 
   return (
     <AnimatePresence mode="wait">
@@ -232,53 +223,7 @@ export default function CustomizeSidebar({ activeTab }: CustomizeSidebarProps) {
 
           {/* BACKGROUND TAB */}
           {activeTab === 'background' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Background</h2>
-                <p className="text-sm text-gray-500 mb-4">
-                  Choose a color or gradient for your card
-                </p>
-              </div>
-
-              {/* Solid Colors */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Solid Colors</h3>
-                <div className="grid grid-cols-6 gap-2">
-                  {backgroundColors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setBackground(color)}
-                      className={`aspect-square rounded-lg border-2 transition-all hover:scale-110 ${
-                        background === color
-                          ? 'border-blue-500 ring-2 ring-blue-200'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Gradients */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Gradients</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {backgroundGradients.map((gradient, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setBackground(gradient)}
-                      className={`aspect-video rounded-lg border-2 transition-all hover:scale-105 ${
-                        background === gradient
-                          ? 'border-blue-500 ring-2 ring-blue-200'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      style={{ background: gradient }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
+            <BackgroundColorPanel />
           )}
 
           {/* TEMPLATES TAB */}

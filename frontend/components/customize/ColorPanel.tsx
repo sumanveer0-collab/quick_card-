@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useCallback } from 'react'
 import { useEditorStore } from '@/store/editor.store'
-import { Check, Plus, Pipette } from 'lucide-react'
+import { Check, Plus } from 'lucide-react'
 
 // ── Colour palettes ──────────────────────────────────────────────────────────
 
@@ -75,30 +75,24 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export default function ColorPanel() {
-  const { elements, selectedId, updateElement, background, setBackground } = useEditorStore()
+  const { elements, selectedId, updateElement, selectElement } = useEditorStore()
+  const shapes = elements.filter(el => el.type === 'shape' && el.visible !== false)
   const selectedEl = elements.find(el => el.id === selectedId)
+  const selectedShape = selectedEl?.type === 'shape' ? selectedEl : null
 
-  // Custom colour input
   const [customColor, setCustomColor] = useState('#3b82f6')
   const pickerRef = useRef<HTMLInputElement>(null)
 
-  // Current element fill or card background
-  const currentFill: string = selectedEl
-    ? (selectedEl.fill || '#000000')
-    : background || '#ffffff'
+  const currentFill: string = selectedShape?.fill || '#3b82f6'
 
   const applyColor = useCallback((color: string) => {
-    if (selectedEl) {
-      updateElement(selectedEl.id, { fill: color })
-    } else {
-      setBackground(color)
-    }
-  }, [selectedEl, updateElement, setBackground])
+    if (!selectedShape) return
+    updateElement(selectedShape.id, { fill: color })
+  }, [selectedShape, updateElement])
 
-  // Derive "logo colours" from all shape/text elements (unique fills)
-  const logoColors = Array.from(
+  const shapeColors = Array.from(
     new Set(
-      elements
+      shapes
         .filter(el => el.fill && el.fill !== 'transparent' && el.fill !== 'none')
         .map(el => el.fill as string)
     )
@@ -109,15 +103,43 @@ export default function ColorPanel() {
       {/* Title */}
       <div>
         <h2 className="text-sm font-bold text-gray-900">
-          {selectedEl ? `Edit ${selectedEl.type === 'shape' ? 'Shape' : selectedEl.type === 'text' ? 'Text' : 'Element'}` : 'Card Background'}
+          {selectedShape ? 'Edit Shape' : 'Shape Colors'}
         </h2>
         <p className="text-[11px] text-gray-400 mt-0.5">
-          {selectedEl ? `Select element colour` : 'Change background colour'}
+          {selectedShape
+            ? 'Change the selected shape colour'
+            : shapes.length > 0
+              ? 'Select a shape on the card or below'
+              : 'No shapes on this card yet'}
         </p>
       </div>
 
+      {/* Shape picker — when nothing / non-shape selected */}
+      {!selectedShape && shapes.length > 0 && (
+        <div>
+          <SectionLabel>Shapes on card</SectionLabel>
+          <div className="space-y-1.5">
+            {shapes.map((shape, i) => (
+              <button
+                key={shape.id}
+                onClick={() => selectElement(shape.id)}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-gray-200 hover:border-blue-400 hover:bg-blue-50/50 transition-colors text-left"
+              >
+                <span
+                  className="w-6 h-6 rounded-md border border-gray-200 flex-shrink-0"
+                  style={{ background: shape.fill || '#e5e7eb' }}
+                />
+                <span className="text-xs text-gray-700 font-medium truncate">
+                  Shape {i + 1}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Current colour + custom picker */}
-      <div>
+      {selectedShape && <div>
         <SectionLabel>New color</SectionLabel>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Colour preview chip */}
@@ -158,75 +180,72 @@ export default function ColorPanel() {
             className="flex-1 min-w-0 text-xs border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:border-blue-400 font-mono"
           />
         </div>
-      </div>
+      </div>}
 
-      {/* Recommended colours */}
-      <div>
-        <SectionLabel>Recommended colors</SectionLabel>
-        <div className="flex flex-wrap gap-2">
-          {RECOMMENDED_COLORS.map(c => (
-            <Swatch key={c} color={c} selected={currentFill === c} onClick={() => applyColor(c)} />
-          ))}
-        </div>
-      </div>
-
-      {/* Logo / element colours — auto-extracted */}
-      {logoColors.length > 0 && (
-        <div>
-          <SectionLabel>Element colors</SectionLabel>
-          <div className="flex flex-wrap gap-2">
-            {logoColors.map(c => (
-              <Swatch key={c} color={c} selected={currentFill === c} onClick={() => applyColor(c)} />
-            ))}
+      {selectedShape && (
+        <>
+          <div>
+            <SectionLabel>Recommended colors</SectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {RECOMMENDED_COLORS.map(c => (
+                <Swatch key={c} color={c} selected={currentFill === c} onClick={() => applyColor(c)} />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Default colour grid */}
-      <div>
-        <SectionLabel>Default colors</SectionLabel>
-        <div className="grid grid-cols-6 gap-1.5">
-          {DEFAULT_COLORS.map(c => (
-            <Swatch key={c} color={c} size="sm" selected={currentFill === c} onClick={() => applyColor(c)} />
-          ))}
-        </div>
-      </div>
+          {shapeColors.length > 0 && (
+            <div>
+              <SectionLabel>Shape colors on card</SectionLabel>
+              <div className="flex flex-wrap gap-2">
+                {shapeColors.map(c => (
+                  <Swatch key={c} color={c} selected={currentFill === c} onClick={() => applyColor(c)} />
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* Gradient colours */}
-      <div>
-        <SectionLabel>Gradient colors</SectionLabel>
-        <div className="grid grid-cols-6 gap-1.5">
-          {GRADIENT_COLORS.map(g => (
+          <div>
+            <SectionLabel>Default colors</SectionLabel>
+            <div className="grid grid-cols-6 gap-1.5">
+              {DEFAULT_COLORS.map(c => (
+                <Swatch key={c} color={c} size="sm" selected={currentFill === c} onClick={() => applyColor(c)} />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <SectionLabel>Gradient colors</SectionLabel>
+            <div className="grid grid-cols-6 gap-1.5">
+              {GRADIENT_COLORS.map(g => (
+                <button
+                  key={g}
+                  onClick={() => applyColor(g)}
+                  title="Gradient"
+                  className={`w-6 h-6 rounded-md border-2 transition-all hover:scale-110 ${
+                    currentFill === g ? 'border-blue-500 shadow-md' : 'border-gray-200 hover:border-gray-400'
+                  }`}
+                  style={{ background: g }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-gray-100">
             <button
-              key={g}
-              onClick={() => applyColor(g)}
-              title="Gradient"
-              className={`w-6 h-6 rounded-md border-2 transition-all hover:scale-110 ${
-                currentFill === g ? 'border-blue-500 shadow-md' : 'border-gray-200 hover:border-gray-400'
-              }`}
-              style={{ background: g }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Apply to all hint */}
-      {selectedEl && (
-        <div className="pt-2 border-t border-gray-100">
-          <button
-            onClick={() => {
-              const fill = selectedEl.fill || '#000000'
-              elements.forEach(el => {
-                if (el.type === selectedEl.type && el.id !== selectedEl.id) {
-                  updateElement(el.id, { fill })
-                }
-              })
-            }}
-            className="w-full py-2 text-xs font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-          >
-            Apply to all {selectedEl.type === 'shape' ? 'shapes' : selectedEl.type === 'text' ? 'text' : 'elements'}
-          </button>
-        </div>
+              onClick={() => {
+                const fill = selectedShape.fill || '#000000'
+                shapes.forEach(el => {
+                  if (el.id !== selectedShape.id) {
+                    updateElement(el.id, { fill })
+                  }
+                })
+              }}
+              className="w-full py-2 text-xs font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              Apply to all shapes
+            </button>
+          </div>
+        </>
       )}
     </div>
   )
