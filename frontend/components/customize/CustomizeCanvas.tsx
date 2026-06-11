@@ -18,10 +18,9 @@ import CanvaStyleTextElement from './CanvaStyleTextElement'
 import CanvaStyleToolbar from './CanvaStyleToolbar'
 import CanvaQuickActions from './CanvaQuickActions'
 import CanvasTextEditor from './CanvasTextEditor'
-import ImageEditorToolbar from './ImageEditorToolbar'
 import FilteredImage from './FilteredImage'
 import VistaprintFloatingToolbar from './VistaprintFloatingToolbar'
-import ShapeFloatingToolbar from './ShapeFloatingToolbar'
+import { ElementPrimaryToolbar, ElementSecondaryToolbar } from './ElementFloatingToolbars'
 import { replacePlaceholders } from '@/lib/template-engine'
 import { isGradientBackground } from '@/lib/background-palette'
 
@@ -124,7 +123,6 @@ export default function CustomizeCanvas() {
   const [canvasTextEditorId, setCanvasTextEditorId] = useState<string | null>(null)
   const [vistaprintToolbarId, setVistaprintToolbarId] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({ x: 0, y: 0, show: false })
-  const [showImageEditor, setShowImageEditor] = useState(false)
   const useCanvaStyle = true // Always use Canva style (floating toolbar)
   const useVistaprintEditor = false // Use Vistaprint-style editor
   const useAdvancedEditor = false // Use Advanced text editor - disabled
@@ -236,13 +234,8 @@ export default function CustomizeCanvas() {
     const element = elements.find(el => el.id === id)
     if (element?.type === 'shape') {
       setSelectedGraphicId(id)
-      setShowImageEditor(false)
-    } else if (element && (element.type === 'icon' || element.type === 'image')) {
-      setSelectedGraphicId(null)
-      setShowImageEditor(true)
     } else {
       setSelectedGraphicId(null)
-      setShowImageEditor(false)
     }
 
     // If it's a text element, show Vistaprint floating toolbar
@@ -265,7 +258,6 @@ export default function CustomizeCanvas() {
       setCanvasTextEditorId(null)
       setVistaprintToolbarId(null)
       setSelectedGraphicId(null)
-      setShowImageEditor(false)
     }
     // Hide context menu on any click
     setContextMenu({ x: 0, y: 0, show: false })
@@ -465,8 +457,25 @@ export default function CustomizeCanvas() {
     return background
   }
 
+  const selectedToolbarEl = selectedId ? elements.find(e => e.id === selectedId) : null
+  const toolbarVariant =
+    selectedToolbarEl?.type === 'image' ? 'image'
+    : selectedToolbarEl?.type === 'shape' ? 'shape'
+    : selectedToolbarEl?.type === 'icon' ? 'icon'
+    : null
+
   return (
-    <div className="flex-1 flex items-center justify-center p-6 bg-[#6b7280] overflow-auto relative">
+    <div className="flex-1 relative min-h-0 flex flex-col">
+      {/* Primary toolbar — fixed top of canvas (image + shape + icon) */}
+      {toolbarVariant && selectedId && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[200] pointer-events-none">
+          <div className="pointer-events-auto">
+            <ElementPrimaryToolbar elementId={selectedId} variant={toolbarVariant} />
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 flex items-center justify-center p-6 bg-[#6b7280] overflow-auto relative min-h-0">
       <div className="relative" ref={containerRef}>
         {/* Card Canvas — full bleed size, no overflow clipping */}
         <div
@@ -478,10 +487,12 @@ export default function CustomizeCanvas() {
             overflow: 'visible',
           }}
         >
-          {/* Shape toolbar — pinned to top of card canvas */}
-          {selectedGraphicId && elements.find(e => e.id === selectedGraphicId)?.type === 'shape' && (
-            <ShapeFloatingToolbar
-              elementId={selectedGraphicId}
+          {/* Secondary toolbar — above icon, below image/shape */}
+          {toolbarVariant && selectedId && (
+            <ElementSecondaryToolbar
+              elementId={selectedId}
+              displayScale={displayScale}
+              placement={toolbarVariant === 'icon' ? 'above' : 'below'}
               onDelete={() => {
                 setSelectedGraphicId(null)
                 selectElement(null)
@@ -789,6 +800,7 @@ export default function CustomizeCanvas() {
           Hold Ctrl + Scroll to zoom
         </div>
       )}
+      </div>
     </div>
   )
 }

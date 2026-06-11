@@ -2,6 +2,8 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { Group, Image as KonvaImage, Rect, Transformer } from 'react-konva'
 import Konva from 'konva'
+import { centerPivotKonvaProps, konvaNodeToTopLeft, syncKonvaCenterPivot } from '@/lib/konva-center-pivot'
+import { flattenIconSvg } from '@/lib/graphics/flatten-icon-svg'
 
 interface IconElementProps {
   element: any
@@ -14,10 +16,7 @@ interface IconElementProps {
 /** Convert an SVG string to an HTMLImageElement via data-URL */
 function svgToImage(svg: string, width: number, height: number, fill: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    // Replace currentColor with the actual fill colour
-    const coloured = svg
-      .replace(/currentColor/g, fill || '#000000')
-      .replace(/fill="none"/g, `fill="${fill || '#000000'}"`)
+    const coloured = flattenIconSvg(svg, fill || '#000000')
 
     // Ensure the SVG has explicit width/height so the browser can render it
     const withSize = coloured.replace(
@@ -71,7 +70,10 @@ export default function IconElement({
   }, [element.svg, element.fill, element.width, element.height])
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
-    onDragEnd(e.target.x(), e.target.y())
+    onDragEnd(
+      e.target.x() - element.width / 2,
+      e.target.y() - element.height / 2,
+    )
   }
 
   const handleTransformEnd = () => {
@@ -81,12 +83,19 @@ export default function IconElement({
     const scaleY = node.scaleY()
     node.scaleX(1)
     node.scaleY(1)
+
+    const newWidth = Math.max(10, element.width * Math.abs(scaleX))
+    const newHeight = Math.max(10, element.height * Math.abs(scaleY))
+    const newScaleX = scaleX < 0 ? -1 : (element.scaleX || 1) < 0 ? -1 : 1
+    syncKonvaCenterPivot(node, newWidth, newHeight)
+    node.scaleX(newScaleX)
+    node.scaleY(1)
+
     onTransformEnd({
-      x: node.x(),
-      y: node.y(),
-      width: Math.max(10, element.width * scaleX),
-      height: Math.max(10, element.height * scaleY),
-      rotation: node.rotation(),
+      ...konvaNodeToTopLeft(node, newWidth, newHeight),
+      width: newWidth,
+      height: newHeight,
+      scaleX: newScaleX,
     })
   }
 
@@ -94,9 +103,9 @@ export default function IconElement({
     <>
       <Group
         ref={groupRef}
-        x={element.x}
-        y={element.y}
-        rotation={element.rotation || 0}
+        {...centerPivotKonvaProps(element)}
+        scaleX={element.scaleX || 1}
+        scaleY={1}
         draggable={!element.locked}
         onClick={onSelect}
         onTap={onSelect}

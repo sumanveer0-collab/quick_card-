@@ -84,6 +84,7 @@ function CardSnapshot({ scale = 1 }: { scale?: number }) {
                   width: `${element.width}px`,
                   height: `${element.height}px`,
                   transform: `rotate(${element.rotation || 0}deg)`,
+                  transformOrigin: 'center center',
                   opacity: element.opacity ?? 1,
                   objectFit: 'cover',
                   pointerEvents: 'none',
@@ -103,7 +104,8 @@ function CardSnapshot({ scale = 1 }: { scale?: number }) {
                   width: `${element.width}px`,
                   height: `${element.height}px`,
                   transform: `rotate(${element.rotation || 0}deg)`,
-                  backgroundColor: element.fill,
+                  transformOrigin: 'center center',
+                  background: element.fill,
                   border: element.stroke ? `${element.strokeWidth}px solid ${element.stroke}` : 'none',
                   borderRadius:
                     element.shapeType === 'circle' ? '50%' : `${element.cornerRadius || 0}px`,

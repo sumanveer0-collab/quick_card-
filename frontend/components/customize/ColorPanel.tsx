@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useCallback } from 'react'
 import { useEditorStore } from '@/store/editor.store'
+import { isGradientBackground } from '@/lib/background-palette'
 import { Check, Plus } from 'lucide-react'
 
 // ── Colour palettes ──────────────────────────────────────────────────────────
@@ -172,7 +173,7 @@ export default function ColorPanel() {
             type="text"
             value={currentFill.startsWith('#') ? currentFill : ''}
             maxLength={7}
-            placeholder="#000000"
+            placeholder={isGradientBackground(currentFill) ? 'Gradient' : '#000000'}
             onChange={e => {
               const v = e.target.value
               if (/^#[0-9a-fA-F]{0,6}$/.test(v)) applyColor(v)
